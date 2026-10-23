@@ -1,0 +1,837 @@
+<Window x:Class="OverrideMirageLauncher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Override Mirage Launcher" Height="720" Width="1280"
+        MinHeight="630" MinWidth="1120"
+        WindowStartupLocation="CenterScreen"
+        Icon="/app.ico"
+        Background="#F4F6F9"
+        FontFamily="Microsoft YaHei UI" FontSize="13">
+
+    <Window.Resources>
+
+        <!-- 行内标签 -->
+        <Style x:Key="RowLabel" TargetType="TextBlock">
+            <Setter Property="Width" Value="80" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#5B6270" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="MinWidth" Value="88" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#D8DDE4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!-- 主按钮 -->
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#2F6F4F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#2F6F4F" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="MinWidth" Value="132" />
+            <Setter Property="Padding" Value="18,9" />
+        </Style>
+
+        <!-- 侧栏底部：启动游戏（通栏主按钮） -->
+        <Style x:Key="LaunchButton" TargetType="Button">
+            <Setter Property="Height" Value="46" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#2F6F4F" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#3A8259" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#255B41" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Background" Value="#B7C7BD" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 侧栏小按钮（圆角、浅底） -->
+        <Style x:Key="PillButton" TargetType="Button">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#F2F6F3" />
+            <Setter Property="BorderBrush" Value="#D5E2DA" />
+            <Setter Property="Foreground" Value="#2F5B44" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#E6EFE9" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 列表行里的普通按钮（打开文件夹） -->
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="88" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Background" Value="#F4F6F9" />
+            <Setter Property="BorderBrush" Value="#DDE2E9" />
+            <Setter Property="Foreground" Value="#3C434F" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#E8EDF3" />
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="#C6CDD6" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#DCE3EB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 列表行里的危险操作按钮（删除整合包） -->
+        <Style x:Key="DangerButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="64" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Background" Value="#FDF1F0" />
+            <Setter Property="BorderBrush" Value="#F0C9C4" />
+            <Setter Property="Foreground" Value="#B2352C" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F9DFDB" />
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="#E39C93" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F2C7C1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderBrush" Value="#D8DDE4" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <!-- 侧栏整合包选择按钮 -->
+        <Style x:Key="PickerButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#F7F9FB" />
+            <Setter Property="BorderBrush" Value="#E4E8EE" />
+            <Setter Property="Padding" Value="7,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#EEF3F7" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 下载页：版本分类卡片 -->
+        <Style x:Key="CategoryButton" TargetType="Button">
+            <Setter Property="Height" Value="76" />
+            <Setter Property="Margin" Value="0,0,12,12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E4E8EE" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                CornerRadius="12" Padding="16,0">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F4F8F5" />
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="#B8D2C2" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#EAF3ED" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 登录方式分段切换 -->
+        <Style x:Key="SegmentItem" TargetType="RadioButton">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="20,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="7"
+                                BorderBrush="Transparent" BorderThickness="1"
+                                Padding="{TemplateBinding Padding}">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontWeight="{TemplateBinding FontWeight}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#2F6F4F" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#FFFFFF" />
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="#DCE4EB" />
+                                <Setter Property="Foreground" Value="#1F5C3F" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 卡片 -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E4E8EE" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="20,18" />
+        </Style>
+
+        <!-- 侧栏导航项 -->
+        <Style x:Key="NavItem" TargetType="RadioButton">
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Foreground" Value="#4A5160" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid>
+                            <Border x:Name="Hover" Background="#EDF1F6" CornerRadius="9" Opacity="0" />
+                            <Border x:Name="Bg" Background="Transparent" CornerRadius="9" Padding="20,0,12,0">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           VerticalAlignment="Center"
+                                           FontSize="14"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontWeight="{TemplateBinding FontWeight}" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Hover"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.16" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Hover"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0" Duration="0:0:0.22" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#E8F2EC" />
+                                <Setter Property="Foreground" Value="#1F5C3F" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 页面标题 -->
+        <Style x:Key="PageTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#1B1D21" />
+        </Style>
+        <Style x:Key="PageSubtitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="264" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= 侧栏 ================= -->
+        <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E4E8EE" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="20,24,20,20">
+                    <TextBlock Text="Override Mirage" FontSize="15" FontWeight="SemiBold" Foreground="#1B1D21" />
+                    <TextBlock Text="Launcher" FontSize="12" Foreground="#8A92A0" Margin="0,2,0,0" />
+                </StackPanel>
+
+                <Grid Grid.Row="1">
+                    <StackPanel x:Name="NavPanel" Margin="10,0,10,0">
+                        <RadioButton x:Name="NavLaunch" GroupName="Nav" Content="主页"
+                                     Style="{StaticResource NavItem}" Tag="0" Checked="Nav_Checked" />
+                        <RadioButton x:Name="NavDownload" GroupName="Nav" Content="下载"
+                                     Style="{StaticResource NavItem}" Tag="-1" Checked="Nav_Checked" />
+                        <RadioButton x:Name="NavSettings" GroupName="Nav" Content="设置"
+                                     Style="{StaticResource NavItem}" Tag="2" Checked="Nav_Checked" />
+                    </StackPanel>
+
+                    <!-- 选中指示条：放在导航项之后，保证绘制在选中底色之上 -->
+                    <Border x:Name="NavIndicator" Width="3" Height="22"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="4,11,0,0" CornerRadius="2" Background="#2F6F4F"
+                            IsHitTestVisible="False">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="NavIndicatorTransform" Y="0" />
+                        </Border.RenderTransform>
+                    </Border>
+                </Grid>
+
+                <!-- 底部操作区：启动游戏 → 整合包选择 / 整合包设置 → 版本号 -->
+                <StackPanel Grid.Row="2" Margin="16,0,16,18">
+                    <Border Height="1" Background="#EDF1F6" Margin="0,0,0,16" />
+
+                    <Button x:Name="BtnLaunch" Content="启动游戏"
+                            Style="{StaticResource LaunchButton}" Click="BtnLaunch_Click" />
+
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Button x:Name="BtnModpackPicker" Grid.Row="1" Grid.Column="0" Height="34"
+                                Style="{StaticResource PickerButton}" Click="BtnModpackPicker_Click"
+                                ToolTip="选择整合包">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="PickerIconHost" Width="22" Height="22" CornerRadius="5"
+                                        ClipToBounds="True" VerticalAlignment="Center" />
+                                <TextBlock x:Name="TxtPickerName" Grid.Column="1" Text="选择整合包"
+                                           Margin="7,0,4,0" VerticalAlignment="Center" FontSize="12"
+                                           Foreground="#1B1D21" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="2" Text="▾" FontSize="10" Foreground="#8A92A0"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+
+                        <Button x:Name="BtnModpackSettings" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                Content="整合包设置" Style="{StaticResource PillButton}" Height="34"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Margin="0,8,0,0" Click="BtnModpackSettings_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="打开整合包目录" Click="MenuOpenPackDir_Click" />
+                                    <MenuItem Header="打开 mods 文件夹" Click="MenuOpenModsDir_Click" />
+                                    <Separator />
+                                    <MenuItem Header="校验 / 修复当前整合包" Click="MenuRepairPack_Click" />
+                                    <MenuItem Header="安装 / 更新模组加载器" Click="MenuLoaderSettings_Click" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Text="v1.1 · 正版 / 离线" FontSize="11" Foreground="#9AA2B0" Margin="2,14,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ================= 内容区 ================= -->
+        <Grid Grid.Column="1" Margin="26,22,26,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 页面宿主 -->
+            <Grid x:Name="PageHost" Grid.Row="0" ClipToBounds="True">
+
+                <!-- 页面：主页（登录方式 + 用户名） -->
+                <StackPanel x:Name="PageLaunch" VerticalAlignment="Top">
+                    <StackPanel.RenderTransform>
+                        <TranslateTransform X="0" />
+                    </StackPanel.RenderTransform>
+
+                    <Border Style="{StaticResource Card}" Width="520" HorizontalAlignment="Left">
+                        <StackPanel>
+                            <!-- 登录方式切换：正版在左，离线在右 -->
+                            <Border Background="#E9EEF3" CornerRadius="9" Padding="3" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="SegMicrosoft" GroupName="Auth" Content="正版登录"
+                                                 Style="{StaticResource SegmentItem}" Tag="microsoft"
+                                                 Checked="AuthMode_Checked" />
+                                    <RadioButton x:Name="SegOffline" GroupName="Auth" Content="离线登录"
+                                                 Style="{StaticResource SegmentItem}" Tag="offline"
+                                                 Checked="AuthMode_Checked" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 正版（Microsoft） -->
+                            <StackPanel x:Name="PaneMicrosoft" Margin="0,20,0,0" Visibility="Collapsed">
+
+                                <!-- 未登录 -->
+                                <StackPanel x:Name="MsSignedOut">
+                                    <TextBlock Text="未登录" FontWeight="SemiBold" Foreground="#1B1D21" />
+                                    <TextBlock Text="登录后启动时会带上正版凭证，可进入正版服务器。"
+                                               Foreground="#8A92A0" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap" />
+                                    <Button x:Name="BtnMsLogin" Content="使用 Microsoft 账号登录"
+                                            Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
+                                            Margin="0,16,0,0" Click="BtnMsLogin_Click" />
+                                    <TextBlock x:Name="TxtMsHint" Foreground="#B45309" FontSize="12"
+                                               Margin="0,10,0,0" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- 等待授权 -->
+                                <StackPanel x:Name="MsSigningIn" Visibility="Collapsed">
+                                    <TextBlock Text="在浏览器打开下面的地址，输入代码完成授权："
+                                               Foreground="#6B7280" FontSize="12" />
+                                    <TextBlock x:Name="TxtMsCode" Text="--------" FontFamily="Consolas"
+                                               FontSize="26" FontWeight="SemiBold" Foreground="#1B1D21"
+                                               Margin="0,8,0,2" />
+                                    <TextBlock x:Name="TxtMsUrl" Foreground="#2F6F4F" FontSize="12"
+                                               TextWrapping="Wrap" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                        <Button x:Name="BtnMsCopyCode" Content="复制代码"
+                                                Style="{StaticResource PillButton}" Click="BtnMsCopyCode_Click" />
+                                        <Button x:Name="BtnMsOpenPage" Content="打开登录页"
+                                                Style="{StaticResource PillButton}" Margin="8,0,0,0"
+                                                Click="BtnMsOpenPage_Click" />
+                                        <Button x:Name="BtnMsCancel" Content="取消"
+                                                Style="{StaticResource PillButton}" Margin="8,0,0,0"
+                                                Click="BtnMsCancel_Click" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="TxtMsWait" Text="等待授权…" Foreground="#8A92A0"
+                                               FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- 已登录 -->
+                                <StackPanel x:Name="MsSignedIn" Visibility="Collapsed">
+                                    <TextBlock x:Name="TxtMsName" Text="—" FontSize="18" FontWeight="SemiBold"
+                                               Foreground="#1B1D21" />
+                                    <TextBlock x:Name="TxtMsUuid" Foreground="#8A92A0" FontSize="12"
+                                               Margin="0,6,0,0" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                        <Button x:Name="BtnMsRefresh" Content="刷新授权"
+                                                Style="{StaticResource PillButton}" Click="BtnMsRefresh_Click" />
+                                        <Button x:Name="BtnMsLogout" Content="退出登录"
+                                                Style="{StaticResource PillButton}" Margin="8,0,0,0"
+                                                Click="BtnMsLogout_Click" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- 离线（盗版） -->
+                            <StackPanel x:Name="PaneOffline" Margin="0,20,0,0">
+                                <TextBlock Text="用户名" FontWeight="SemiBold" Foreground="#1B1D21" />
+                                <TextBox x:Name="TxtName" Height="38" Margin="0,10,0,0" MaxLength="16"
+                                         TextChanged="TxtName_TextChanged" />
+                                <TextBlock Text="盗版（离线）模式：名字只在本机生效，UUID 由名字推算，不校验账号。"
+                                           Foreground="#8A92A0" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- 页面：版本与模组 -->
+
+                <!-- 页面：设置（内容比可视区高，外面包一层滚动条） -->
+                <!-- 设置页内容比可视区高，外面包一层滚动条。
+                     这层 ScrollViewer 就是「页面宿主」：不显示时必须 Collapsed，
+                     否则它会铺满 PageHost 把主页的控件全部挡住（看得见但点不到）。 -->
+                <ScrollViewer x:Name="PageSettingsScroll" Visibility="Collapsed"
+                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              PanningMode="VerticalOnly" Focusable="False" Padding="0,0,10,0">
+                <StackPanel x:Name="PageSettings" VerticalAlignment="Top">
+                    <StackPanel.RenderTransform>
+                        <TranslateTransform X="0" />
+                    </StackPanel.RenderTransform>
+
+                    <TextBlock Text="设置" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="Java、游戏目录、内存与正版登录配置。一般保持默认即可。"
+                               Style="{StaticResource PageSubtitle}" Margin="0,6,0,24" />
+
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock DockPanel.Dock="Left" Text="Java" Style="{StaticResource RowLabel}" />
+                        <Button x:Name="BtnBrowseJava" DockPanel.Dock="Right" Content="浏览…" Click="BtnBrowseJava_Click" />
+                        <ComboBox x:Name="CmbJava" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock DockPanel.Dock="Left" Text="游戏目录" Style="{StaticResource RowLabel}" />
+                        <Button x:Name="BtnBrowseGameDir" DockPanel.Dock="Right" Content="浏览…"
+                                Click="BtnBrowseGameDir_Click" />
+                        <TextBox x:Name="TxtGameDir" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0,0,0,18">
+                        <TextBlock DockPanel.Dock="Left" Text="最大内存" Style="{StaticResource RowLabel}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="TxtMemory" Width="96" Text="4096" />
+                            <TextBlock Text="MB" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#5B6270" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="整合包隔离" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <CheckBox x:Name="ChkIsolate" Content="每个整合包用独立的 mods / 存档 / 配置目录（版本隔离）"
+                                      Checked="ChkIsolate_Changed" Unchecked="ChkIsolate_Changed" />
+                            <TextBlock x:Name="TxtIsolateHint" Foreground="#8A92A0" FontSize="12"
+                                       Margin="0,8,0,0" TextWrapping="Wrap"
+                                       Text="开启后每个整合包各自一套 mods / saves / config，互不干扰；版本、依赖库、资源仍然共用，不会重复下载。" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="CurseForge" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <DockPanel Margin="0,0,0,8">
+                                <Button x:Name="BtnSaveCfKey" DockPanel.Dock="Right" Content="保存"
+                                        Click="BtnSaveCfKey_Click" Margin="8,0,0,0" />
+                                <TextBox x:Name="TxtCfApiKey" ToolTip="在 console.curseforge.com 免费申请，填了才能在下载页用 CurseForge 来源" />
+                            </DockPanel>
+                            <TextBlock Foreground="#8A92A0" FontSize="12" TextWrapping="Wrap"
+                                       Text="CurseForge 的第三方接口强制要求 API Key：到 console.curseforge.com 注册一个应用即可免费拿到。留空不影响 Modrinth 来源。" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="网络" FontWeight="SemiBold" Margin="0,0,0,12" />
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock DockPanel.Dock="Left" Text="下载源" Style="{StaticResource RowLabel}" />
+                                <ComboBox x:Name="CmbSource" Height="34" Width="300" HorizontalAlignment="Left"
+                                          SelectionChanged="CmbSource_SelectionChanged">
+                                    <ComboBoxItem Content="官方源（Mojang / 加载器官方）" />
+                                    <ComboBoxItem Content="国内镜像（BMCLAPI）" />
+                                </ComboBox>
+                            </DockPanel>
+                            <TextBlock Foreground="#8A92A0" FontSize="12" TextWrapping="Wrap"
+                                       Text="官方源连不上时（例如 NeoForge 的 maven 超时）切到镜像：覆盖 Mojang 版本 / 资源 / 库、Fabric、Forge、NeoForge；Quilt 仍走官方。切换后重新查询即可，已下载的文件不用重下。" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="正版登录（Microsoft）" FontWeight="SemiBold" Margin="0,0,0,12" />
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock DockPanel.Dock="Left" Text="应用 ID" Style="{StaticResource RowLabel}" />
+                                <Button x:Name="BtnSaveClientId" DockPanel.Dock="Right" Content="保存"
+                                        Click="BtnSaveClientId_Click" />
+                                <TextBox x:Name="TxtClientId" ToolTip="留空就用启动器自带的应用 ID" />
+                            </DockPanel>
+                            <TextBlock Foreground="#8A92A0" FontSize="12" TextWrapping="Wrap"
+                                       Text="留空即可：启动器自带一个公开的 Azure 应用 ID（OverrideMirageLauncher），正版登录开箱可用。想换成自己在 Azure 门户注册的「移动和桌面应用程序」就填进来（该应用要开启「允许公共客户端流」）。" />
+                            <TextBlock Foreground="#8A92A0" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"
+                                       Text="账号只存在本机的 config.json，不会写进程序：换一台机器 / 换一个人打开都是「未登录」，各自登自己的微软账号。要分发这个启动器给别人，先点主页的「退出登录」或执行 --resetaccount 清掉本机账号。" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnOpenGameDir" Content="打开游戏目录" Margin="0" Click="BtnOpenGameDir_Click" />
+                    </StackPanel>
+                </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- 状态条：仅在操作过程中出现，闲置后自动收起 -->
+            <StackPanel x:Name="StatusStrip" Grid.Row="1" Margin="0,14,0,0" Visibility="Collapsed">
+                <ProgressBar x:Name="Prg" Height="4" Minimum="0" Maximum="100" Value="0"
+                             Foreground="#2F6F4F" Background="#E6EBF0" BorderThickness="0" />
+                <TextBlock x:Name="TxtStatus" Text="就绪" Foreground="#8A92A0" FontSize="12"
+                           Margin="0,8,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- 整合包选择界面：盖住内容区，点卡片切换，返回则关闭 -->
+            <Grid x:Name="PickerOverlay" Grid.RowSpan="2" Background="#F4F6F9" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="返回" Style="{StaticResource PillButton}"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="BtnClosePicker_Click" />
+                    <Border />
+                </DockPanel>
+
+                <ScrollViewer x:Name="PickerScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="PickerPanel" Orientation="Vertical" />
+                </ScrollViewer>
+
+                <StackPanel x:Name="PickerEmpty" Grid.Row="1" VerticalAlignment="Center"
+                            HorizontalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock Text="本地还没有整合包" FontSize="15" FontWeight="SemiBold"
+                               Foreground="#1B1D21" HorizontalAlignment="Center" />
+                    <TextBlock Text="先去「下载」页装一个，装完就会出现在这里。" Foreground="#8A92A0"
+                               Margin="0,6,0,14" HorizontalAlignment="Center" />
+                    <Button Content="去下载" Style="{StaticResource PrimaryButton}" Margin="0"
+                            HorizontalAlignment="Center" Click="BtnGoDownload_Click" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+        <!-- ===== 下载界面：覆盖整个窗口 ===== -->
+                <!-- 页面：下载（左侧来源 + 右侧分类 / 安装器） -->
+                <Grid x:Name="DownloadOverlay" Grid.ColumnSpan="2" Background="#F4F6F9" Visibility="Collapsed">
+                    <Grid.RenderTransform>
+                        <TranslateTransform X="0" />
+                    </Grid.RenderTransform>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="184" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左侧：下载来源 -->
+                    <StackPanel Grid.Column="0" Margin="26,24,18,20">
+                        <Button Content="返回" Style="{StaticResource PillButton}" Height="40"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Margin="0,0,0,18" Click="BtnCloseDownload_Click" />
+
+                        <RadioButton x:Name="SrcMinecraft" GroupName="DownloadSource" Content="Minecraft"
+                                     Style="{StaticResource NavItem}" Tag="minecraft"
+                                     Checked="DownloadSource_Checked" />
+                        <RadioButton x:Name="SrcMods" GroupName="DownloadSource" Content="模组"
+                                     Style="{StaticResource NavItem}" Tag="mods"
+                                     Checked="DownloadSource_Checked" />
+                        <RadioButton x:Name="SrcPacks" GroupName="DownloadSource" Content="资源包"
+                                     Style="{StaticResource NavItem}" Tag="packs"
+                                     Checked="DownloadSource_Checked" />
+                        <RadioButton x:Name="SrcShaders" GroupName="DownloadSource" Content="光影"
+                                     Style="{StaticResource NavItem}" Tag="shaders"
+                                     Checked="DownloadSource_Checked" />
+                    </StackPanel>
+
+                    <!-- 右侧视图 1：版本分类 -->
+                    <StackPanel x:Name="DownloadCategories" Grid.Column="1" Margin="0,24,26,20">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform X="0" />
+                        </StackPanel.RenderTransform>
+                        <ScrollViewer MaxHeight="620" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="DownloadSections" HorizontalAlignment="Stretch" />
+                        </ScrollViewer>
+                    </StackPanel>
+
+                    <!-- 右侧视图 0：模组 / 资源包 / 光影（Modrinth 搜索） -->
+                    <Grid x:Name="DownloadContent" Grid.Column="1" Margin="0,24,26,20"
+                          Visibility="Collapsed">
+                        <Grid.RenderTransform>
+                            <TranslateTransform X="0" />
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <TextBlock x:Name="TxtContentTitle" Text="模组" FontSize="17"
+                                       FontWeight="SemiBold" Foreground="#1B1D21" />
+                            <TextBlock x:Name="TxtContentHint" Text="来自 Modrinth，安装到当前整合包。"
+                                       Style="{StaticResource PageSubtitle}" Margin="0,6,0,0"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <DockPanel Grid.Row="1" Margin="0,14,0,10">
+                            <Button x:Name="BtnContentSearch" DockPanel.Dock="Right" Content="搜索"
+                                    Style="{StaticResource PillButton}" Height="38" Padding="20,0"
+                                    Margin="10,0,0,0" Click="BtnContentSearch_Click" />
+                            <TextBox x:Name="TxtContentSearch" Height="38" VerticalContentAlignment="Center"
+                                     ToolTip="输入关键词后回车搜索；留空按热度浏览"
+                                     KeyDown="TxtContentSearch_KeyDown" />
+                        </DockPanel>
+
+                        <Grid Grid.Row="2" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <DockPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="游戏版本" Foreground="#5B6270" FontSize="12"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox x:Name="CmbContentMc" Width="130" Height="32"
+                                          SelectionChanged="ContentFilter_Changed" />
+                            </DockPanel>
+
+                            <DockPanel Grid.Column="1" Margin="0,0,10,0">
+                                <TextBlock Text="加载器" Foreground="#5B6270" FontSize="12"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox x:Name="CmbContentLoader" Width="110" Height="32"
+                                          SelectionChanged="ContentFilter_Changed" />
+                            </DockPanel>
+
+                            <DockPanel Grid.Column="2" Margin="0,0,10,0">
+                                <TextBlock Text="数据源" Foreground="#5B6270" FontSize="12"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox x:Name="CmbContentProvider" Width="110" Height="32"
+                                          SelectionChanged="ContentProvider_Changed" />
+                            </DockPanel>
+
+                            <TextBlock x:Name="TxtContentTarget" Grid.Column="3" Foreground="#8A92A0"
+                                       FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </Grid>
+
+                        <Grid Grid.Row="3">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="ContentResults" />
+                            </ScrollViewer>
+                            <TextBlock x:Name="TxtContentEmpty" Text="输入关键词后点「搜索」。"
+                                       FontSize="13" Foreground="#8A92A0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                    </Grid>
+
+                    <!-- 右侧视图 2：加载器安装 -->
+                    <Grid x:Name="DownloadInstaller" Grid.Column="1" Margin="0,24,26,20" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Button x:Name="BtnDlBack" Content="←" Style="{StaticResource PillButton}"
+                                    Width="38" Padding="0" FontSize="16" VerticalAlignment="Center"
+                                    ToolTip="返回" Click="BtnDlBack_Click" />
+
+                            <Grid Grid.Column="1" Margin="10,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="DlNameIcon" Width="34" Height="34" CornerRadius="7"
+                                        ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox x:Name="TxtDlName" Grid.Column="1" Height="34" MaxLength="32"
+                                         ToolTip="整合包名称，留空则用版本号命名" />
+                            </Grid>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="1" Margin="0,16,0,0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock x:Name="TxtDlSummary" FontSize="12" Foreground="#5B6270"
+                                           TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                                <StackPanel x:Name="LoaderSections" />
+
+                                <Button x:Name="BtnDlInstall" Content="安装" Style="{StaticResource PrimaryButton}"
+                                        HorizontalAlignment="Right" MinWidth="150" Height="42" Margin="0,20,0,0"
+                                        Click="BtnDlInstall_Click" />
+
+                                <TextBlock x:Name="TxtDownloadHint" Text="" Foreground="#8A92A0"
+                                           FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+
+    </Grid>
+</Window>
