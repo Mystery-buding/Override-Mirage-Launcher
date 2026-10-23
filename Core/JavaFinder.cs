@@ -9,9 +9,6 @@ public sealed record JavaInfo(string Path, int MajorVersion)
     public string Display => $"Java {MajorVersion} — {Path}";
 }
 
-/// <summary>
-/// 查找本机可用的 Java。优先取满足版本要求的最高版本。
-/// </summary>
 public static class JavaFinder
 {
     public static List<JavaInfo> Discover(string gameDir)
@@ -27,14 +24,11 @@ public static class JavaFinder
             else if (File.Exists(java)) candidates.Add(java);
         }
 
-        // 1. JAVA_HOME
         AddDirIfValid(Path.Combine(Environment.GetEnvironmentVariable("JAVA_HOME") ?? "", "bin"));
 
-        // 2. PATH 上的 java
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
             AddDirIfValid(dir);
 
-        // 3. 常见安装位置
         var roots = new[]
         {
             @"C:\Program Files\Java", @"C:\Program Files (x86)\Java",
@@ -53,7 +47,6 @@ public static class JavaFinder
             AddDirIfValid(Path.Combine(root, "bin"));
         }
 
-        // 4. 游戏目录下的 runtime（PCL / 官方启动器自带运行时）
         var runtimeRoots = new[]
         {
             Paths.RuntimeDir(gameDir),
@@ -76,9 +69,6 @@ public static class JavaFinder
         return result.OrderByDescending(j => j.MajorVersion).ToList();
     }
 
-    /// <summary>
-    /// 读取 java -version 输出的主版本号。失败返回 0。
-    /// </summary>
     public static int GetMajorVersion(string javaPath)
     {
         try
@@ -102,7 +92,7 @@ public static class JavaFinder
 
             var first = int.Parse(match.Groups[1].Value);
             if (first == 1 && match.Groups[2].Success)
-                return int.Parse(match.Groups[2].Value); // 1.8 -> 8
+                return int.Parse(match.Groups[2].Value);
 
             return first;
         }
@@ -112,9 +102,6 @@ public static class JavaFinder
         }
     }
 
-    /// <summary>
-    /// 按版本需求挑选 Java：满足最低要求的里面取最小可用版本；都不满足时取最高版本并返回 false。
-    /// </summary>
     public static JavaInfo? Pick(List<JavaInfo> available, int requiredMajor, out bool satisfied)
     {
         satisfied = false;
@@ -155,7 +142,7 @@ public static class JavaFinder
                     queue.Enqueue((sub, depth + 1));
             }
         }
-        catch { /* 忽略权限问题 */ }
+        catch {  }
         return results;
     }
 }

@@ -9,7 +9,6 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // 导出自带的方块图标，方便用户拿去二次编辑（画图 / PS / Aseprite）
         var exportIndex = IndexOf(e.Args, "--exporticons");
         if (exportIndex >= 0)
         {
@@ -32,8 +31,6 @@ public partial class App : Application
             return;
         }
 
-        // 命令行模式下先用线程池跑，避免 UI 同步上下文与阻塞等待互相死锁；
-        // 结束后直接 Environment.Exit，跳过 WPF 的关闭协商。
         if (e.Args.Contains("--selftest", StringComparer.OrdinalIgnoreCase))
         {
             var code = Task.Run(() => SelfTest.RunAsync()).GetAwaiter().GetResult();
@@ -61,7 +58,6 @@ public partial class App : Application
             return;
         }
 
-        // 正版登录诊断：一步步打印 Xbox → XSTS → Minecraft → 档案的结果，写到 mslogin.log
         if (e.Args.Contains("--mslogin", StringComparer.OrdinalIgnoreCase))
         {
             var code = Task.Run(() => CliRunner.MicrosoftLoginTestAsync()).GetAwaiter().GetResult();
@@ -69,7 +65,6 @@ public partial class App : Application
             return;
         }
 
-        // 把启动器给别人之前清掉本机账号（账号只在 config.json 里，不写进程序）
         if (e.Args.Contains("--resetaccount", StringComparer.OrdinalIgnoreCase))
         {
             Environment.Exit(CliRunner.ResetAccount());

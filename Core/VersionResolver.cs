@@ -4,18 +4,8 @@ using System.Text.Json.Nodes;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 合并后的版本：已把 inheritsFrom 链条展开。
-/// </summary>
-/// <param name="VersionId">请求的版本 id</param>
-/// <param name="JarId">继承链最顶层版本 id，客户端 jar 取自该版本</param>
-/// <param name="MergedJson">合并后的版本 JSON 文本</param>
 public sealed record ResolvedVersion(string VersionId, string JarId, string MergedJson);
 
-/// <summary>
-/// 处理模组加载器产生的 inheritsFrom 版本继承：
-/// 把父版本的 libraries / arguments / mainClass 等与子版本合并成一份可直接使用的 JSON。
-/// </summary>
 public static class VersionResolver
 {
     private const int MaxDepth = 8;
@@ -39,7 +29,6 @@ public static class VersionResolver
         if (chain.Count == 0)
             throw new InvalidOperationException($"无法解析版本 {versionId}。");
 
-        // 从最顶层父版本开始向下合并
         var merged = (JsonObject)chain[^1].Json.DeepClone();
         for (var i = chain.Count - 2; i >= 0; i--)
             merged = Merge(merged, chain[i].Json);
@@ -48,9 +37,6 @@ public static class VersionResolver
         return new ResolvedVersion(versionId, jarId, merged.ToJsonString());
     }
 
-    /// <summary>
-    /// 子版本覆盖父版本；libraries 与 arguments 采用追加语义。
-    /// </summary>
     private static JsonObject Merge(JsonObject parent, JsonObject child)
     {
         var result = (JsonObject)parent.DeepClone();
@@ -75,9 +61,6 @@ public static class VersionResolver
                         var name = lib["name"]?.GetValue<string>() ?? "";
                         var parts = name.Split(':');
 
-                        // 去重键必须带上分类器：org.lwjgl:lwjgl:3.4.3 与
-                        // org.lwjgl:lwjgl:3.4.3:natives-windows 是两个不同的产物，
-                        // 只用 group:artifact 会让 natives 覆盖主 jar，反之亦然。
                         var identity = parts.Length >= 3
                             ? parts[0] + ":" + parts[1] + ":" + (parts.Length > 3 ? parts[3] : "")
                             : name;

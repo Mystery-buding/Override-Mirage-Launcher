@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -32,7 +32,6 @@ public partial class MainWindow : Window
     private LoaderKind? _dlLoaderKind;
     private VersionSummary? _selectedDlVersion;
 
-    /// <summary>官方清单里标记为快照、但实际是愚人节整活的版本。</summary>
     private static readonly HashSet<string> AprilFoolsIds = new(StringComparer.OrdinalIgnoreCase)
     {
         "15w14a", "1.RV-Pre1", "3D Shareware v1.34", "20w14infinite",
@@ -62,7 +61,6 @@ public partial class MainWindow : Window
             if (!_busy) StatusStrip.Visibility = Visibility.Collapsed;
         };
 
-        // 用户名改动后延迟落盘：既不会每个按键都写一次，也能保证关窗前一定保存
         _nameSaveTimer = new System.Windows.Threading.DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(400)
@@ -90,7 +88,7 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        // 先建立初始页，再勾选导航项，避免 Checked 在控件树构建完成前触发
+
         ShowPage(0, animate: false);
         NavLaunch.IsChecked = true;
 
@@ -149,7 +147,6 @@ public partial class MainWindow : Window
             : "所有整合包共用游戏目录，mods 与存档混在一起，换版本时容易冲突。";
     }
 
-    /// <summary>启动时把实际用到的目录一次性打进日志，方便确认东西都装在哪。</summary>
     private void LogPaths()
     {
         var gameDir = _cfg.GameDir;
@@ -176,11 +173,6 @@ public partial class MainWindow : Window
         LoadLocalVersions();
     }
 
-    // ---------------- 页面切换 ----------------
-
-    /// <summary>
-    /// 界面自检：程序化切换页面，校验可见性、透明度与指示条位置，结果写入 uitest.log。
-    /// </summary>
     public async Task UiSelfTestAsync()
     {
         var report = new List<string>();
@@ -192,7 +184,6 @@ public partial class MainWindow : Window
         {
             report.Add("=== 页面切换自检 ===");
 
-            // 等首屏数据（Java / 版本清单）就位再切页；超时也不阻断自检
             await Task.WhenAny(_initialLoad, Task.Delay(8000));
 
             foreach (var index in new[] { 0, 1, 0 })
@@ -224,7 +215,6 @@ public partial class MainWindow : Window
                 }
             }
 
-            // 主页上的控件能不能真的点到（被覆盖层 / 滚动容器挡住的话这里会报「被挡」）
             ShowPage(0);
             await Task.Delay(420);
             foreach (var (label, el) in new (string, FrameworkElement)[]
@@ -236,7 +226,6 @@ public partial class MainWindow : Window
                     report.Add($"  !! {label} 点不到，被别的元素挡住了");
             }
 
-            // 下载是整窗覆盖层，不属于页面切换，单独校验
             OpenDownloadOverlay();
             await Task.Delay(280);
             var span = (int)DownloadOverlay.GetValue(Grid.ColumnSpanProperty);
@@ -246,7 +235,6 @@ public partial class MainWindow : Window
             if (span != 2)
                 report.Add("  !! 下载覆盖层没有覆盖左侧栏");
 
-            // 等清单加载完，确认分类区域与「最新版」展开内容已生成
             var deadline = DateTime.UtcNow.AddSeconds(4);
             while (SectionRowCount("latest") == 0 && DateTime.UtcNow < deadline)
                 await Task.Delay(100);
@@ -257,14 +245,12 @@ public partial class MainWindow : Window
             if (SectionRowCount("latest") == 0)
                 report.Add("  !! 最新版区域为空");
 
-            // 来源切换：模组 / 资源包 / 光影 走 Modrinth 搜索页
             SrcMods.IsChecked = true;
             await Task.Delay(160);
             report.Add($"切到「模组」→ 内容页 {DownloadContent.Visibility}，分类 {DownloadCategories.Visibility}");
             if (DownloadContent.Visibility != Visibility.Visible || DownloadCategories.Visibility != Visibility.Collapsed)
                 report.Add("  !! 来源切换未生效");
 
-            // 真搜一次，确认接口通、结果行能渲染出来
             TxtContentSearch.Text = "jei";
             _ = SearchContentAsync();
             var searchDeadline = DateTime.UtcNow.AddSeconds(25);
@@ -274,12 +260,11 @@ public partial class MainWindow : Window
             if (ContentResults.Children.Count == 0)
                 report.Add("  !! 模组搜索没有结果");
 
-            // 真装一个模组：装完后行上的「下载中…」必须换回版本信息（曾经一直卡在「下载中…」）
             var firstRow = _contentRows.Values.FirstOrDefault();
             if (firstRow is not null && _currentPack is not null)
             {
                 _ = ToggleContentVersionsAsync(firstRow.Project, firstRow);
-                // 拉版本时列表里先放的是「正在获取版本列表…」文本，等真正渲染出版本行
+
                 var versionDeadline = DateTime.UtcNow.AddSeconds(25);
                 while (DateTime.UtcNow < versionDeadline && !firstRow.List.Children.OfType<Border>().Any())
                     await Task.Delay(200);
@@ -308,7 +293,6 @@ public partial class MainWindow : Window
                     if (!firstRow.State.Text.StartsWith("已安装", StringComparison.Ordinal))
                         report.Add("  !! 装完后状态没有变成「已安装 …」");
 
-                    // 测试下载的文件不留在本机
                     const string prefix = "已安装到 ";
                     if (TxtStatus.Text.StartsWith(prefix, StringComparison.Ordinal))
                     {
@@ -323,7 +307,7 @@ public partial class MainWindow : Window
                         }
                         catch
                         {
-                            // 清理失败不影响自检结论
+
                         }
                     }
                 }
@@ -331,7 +315,6 @@ public partial class MainWindow : Window
 
             SrcMinecraft.IsChecked = true;
 
-            // 正式版安装器视图：四行加载器菜单应都建出来并开始查版本
             OpenInstaller("release");
             await Task.Delay(220);
             report.Add($"安装界面版本：{_selectedDlVersion?.Id ?? "无"}，加载器菜单 {_loaderMenus.Count} 个");
@@ -343,7 +326,6 @@ public partial class MainWindow : Window
             if (TxtDlSummary.Text.Length == 0)
                 report.Add("  !! 安装摘要为空");
 
-            // 等 NeoForge 的版本拉回来，展开菜单选第一个，应自动命名并刷新摘要
             var neoUi = _loaderMenus[LoaderKind.NeoForge];
             var menuDeadline = DateTime.UtcNow.AddSeconds(30);
             while (DateTime.UtcNow < menuDeadline && !neoUi.Loaded)
@@ -374,7 +356,6 @@ public partial class MainWindow : Window
             if (NavDownload.IsChecked == true)
                 report.Add("  !! 关闭后「下载」导航仍处于选中状态");
 
-            // 整合包选择界面：整行展示，每行右侧一个删除按钮
             BuildPickerCards();
             PickerOverlay.Visibility = Visibility.Visible;
             await Task.Delay(220);
@@ -408,11 +389,10 @@ public partial class MainWindow : Window
         }
         catch
         {
-            // 忽略
+
         }
     }
 
-    /// <summary>对控件中心做一次命中测试，看最上层是不是它自己（用来发现「看得见但点不到」）。</summary>
     private string DescribeHitTest(FrameworkElement element)
     {
         element.UpdateLayout();
@@ -436,7 +416,6 @@ public partial class MainWindow : Window
     {
         if (sender is not RadioButton { Tag: string raw }) return;
 
-        // 下载不是普通页面：整窗覆盖层，不参与页切换与指示条
         if (raw == "-1")
         {
             OpenDownloadOverlay();
@@ -446,25 +425,23 @@ public partial class MainWindow : Window
         if (int.TryParse(raw, out var navIndex)) ShowPage(PageIndexOf(navIndex));
     }
 
-    /// <summary>页面下标 → 导航项下标（下载占了一格，但不属于页面）。</summary>
     private static int NavIndexOf(int pageIndex) => pageIndex switch
     {
         0 => 0,
-        1 => 2,  // 设置
+        1 => 2,
         _ => pageIndex
     };
 
-    /// <summary>导航项下标 → 页面下标，与 <see cref="NavIndexOf"/> 互为逆运算。</summary>
     private static int PageIndexOf(int navIndex) => navIndex switch
     {
         0 => 0,
-        2 => 1,  // 设置
+        2 => 1,
         _ => -1
     };
 
     private void ShowPage(int index, bool animate = true)
     {
-        // 宿主 = 页面本身（设置页是那层 ScrollViewer，折叠它才能彻底让位给主页）
+
         FrameworkElement[] pages = { PageLaunch, PageSettingsScroll };
         if (index < 0 || index >= pages.Length) return;
         if (_currentPage == index && animate) return;
@@ -473,7 +450,6 @@ public partial class MainWindow : Window
         var previousIndex = _currentPage;
         var direction = index >= previousIndex ? 1 : -1;
 
-        // 旧页淡出后收起
         if (previousIndex >= 0 && previousIndex != index)
         {
             var previous = pages[previousIndex];
@@ -483,7 +459,7 @@ public partial class MainWindow : Window
                 fadeOut.Completed += (_, _) =>
                 {
                     previous.Visibility = Visibility.Collapsed;
-                    previous.BeginAnimation(OpacityProperty, null); // 解除 HoldEnd，避免残留 0 透明度
+                    previous.BeginAnimation(OpacityProperty, null);
                     previous.Opacity = 1;
                 };
                 previous.BeginAnimation(OpacityProperty, fadeOut);
@@ -498,7 +474,6 @@ public partial class MainWindow : Window
 
         target.Visibility = Visibility.Visible;
 
-        // 新页：横向滑入 + 淡入，方向跟随导航方向
         if (target.RenderTransform is System.Windows.Media.TranslateTransform transform)
         {
             if (animate)
@@ -550,11 +525,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 状态条 ----------------
-
-    /// <summary>
-    /// 状态条平时收起，只在有操作时短暂出现；忙碌期间常驻，结束后 4 秒自动隐藏。
-    /// </summary>
     private void SetStatus(string text)
     {
         if (!Dispatcher.CheckAccess())
@@ -569,8 +539,6 @@ public partial class MainWindow : Window
         _statusTimer.Stop();
         if (!_busy) _statusTimer.Start();
     }
-
-    // ---------------- 初始化 ----------------
 
     private async Task RefreshJavaAsync()
     {
@@ -601,10 +569,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>
-    /// 整合包列表只读本地 versions 目录：有同名 json 的才算装好。
-    /// 官方版本不再混进列表，下载统一在「下载」页做。
-    /// </summary>
     private void LoadLocalVersions()
     {
         try
@@ -632,8 +596,6 @@ public partial class MainWindow : Window
             SetStatus("扫描本地整合包失败：" + ex.Message);
         }
     }
-
-    // ---------------- 整合包选择 ----------------
 
     private void UpdatePickerButton()
     {
@@ -778,7 +740,7 @@ public partial class MainWindow : Window
         };
         row.MouseLeftButtonUp += (_, a) =>
         {
-            // 点在右侧操作按钮上时不触发选中
+
             if (IsVisualDescendantOf(a.OriginalSource as DependencyObject, actions)) return;
             SelectPack(pack.Id);
         };
@@ -786,17 +748,16 @@ public partial class MainWindow : Window
         return row;
     }
 
-    /// <summary>在资源管理器里打开该整合包的目录。</summary>
     private void OpenPackFolder(ModpackEntry pack)
     {
-        // 版本隔离开启时 mods / 存档 / 配置都在独立目录里，那才是要打开的目录
+
         var dir = _cfg.IsolateInstances
             ? _cfg.RunDir(pack.Id)
             : Path.Combine(Paths.VersionsDir(_cfg.GameDir), pack.Id);
 
         try
         {
-            // 独立目录还没建过（装完没启动）就先建出来，方便直接往里放 mod
+
             if (_cfg.IsolateInstances && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
@@ -818,7 +779,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>找出所有 inheritsFrom 指向该版本的整合包（模组加载器版本依赖原版）。</summary>
     private List<string> FindInheritedPacks(string parentId)
     {
         var result = new List<string>();
@@ -842,14 +802,13 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // 单个文件读不了就跳过
+
             }
         }
 
         return result;
     }
 
-    /// <summary>在视觉树里找第一个指定类型的子元素。</summary>
     private static T? FindVisualChild<T>(DependencyObject node) where T : DependencyObject
     {
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
@@ -862,7 +821,6 @@ public partial class MainWindow : Window
         return null;
     }
 
-    /// <summary>统计视觉树里指定类型的子元素个数。</summary>
     private static int CountVisualChildren<T>(DependencyObject node) where T : DependencyObject
     {
         var count = 0;
@@ -876,7 +834,6 @@ public partial class MainWindow : Window
         return count;
     }
 
-    /// <summary>判断某个元素是否在 ScrollViewer 里（内容超高时可以滚动查看）。</summary>
     private static bool HasScrollableAncestor(DependencyObject? node)
     {
         while (node is not null)
@@ -888,7 +845,6 @@ public partial class MainWindow : Window
         return false;
     }
 
-    /// <summary>判断事件源是否在指定元素内部（用于让删除按钮不冒泡到整行的点击事件）。</summary>
     private static bool IsVisualDescendantOf(DependencyObject? node, DependencyObject ancestor)
     {
         while (node is not null)
@@ -900,10 +856,6 @@ public partial class MainWindow : Window
         return false;
     }
 
-    /// <summary>
-    /// 删除一个本地整合包：整个 versions/&lt;id&gt; 目录；
-    /// 若该整合包还有独立目录 instances/&lt;id&gt;（mods / 存档 / 配置），会先问是否一起删。
-    /// </summary>
     private void DeletePack(ModpackEntry pack)
     {
         var dir = Path.Combine(Paths.VersionsDir(_cfg.GameDir), pack.Id);
@@ -981,7 +933,6 @@ public partial class MainWindow : Window
             : $"已删除整合包：{pack.Id}");
     }
 
-    /// <summary>切换当前整合包：写回配置、刷新按钮与「版本与模组」页，然后关掉选择界面。</summary>
     private void SelectPack(string id)
     {
         var pack = _modpacks.FirstOrDefault(p => p.Id == id);
@@ -997,7 +948,6 @@ public partial class MainWindow : Window
         SetStatus($"已选择整合包：{pack.Id}");
     }
 
-    /// <summary>下载页的官方版本清单，按需加载，只拉一次。</summary>
     private async Task LoadDownloadCatalogAsync(bool force)
     {
         if (_downloadLoading) return;
@@ -1022,7 +972,6 @@ public partial class MainWindow : Window
             LogBus.Info($"下载清单：正式版 {releaseCount}，预览版 {VersionsFor("snapshot").Count}，" +
                         $"远古版 {VersionsFor("legacy").Count}，愚人节版 {VersionsFor("april").Count}");
 
-            // 已经在安装器视图里的话，切换分类后同步刷新版本下拉
             if (DownloadInstaller.Visibility == Visibility.Visible && _currentCategory.Length > 0)
                 OpenInstaller(_currentCategory);
         }
@@ -1037,9 +986,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 事件 ----------------
-
-    // ---------------- 下载页 ----------------
     private void DownloadSource_Checked(object sender, RoutedEventArgs e)
     {
         if (sender is not RadioButton { Tag: string key }) return;
@@ -1064,7 +1010,6 @@ public partial class MainWindow : Window
         PrepareContentSource();
     }
 
-    /// <summary>下载页三个右侧视图之间的切换：只显示目标，带淡入横滑。</summary>
     private void ShowDownloadView(FrameworkElement view)
     {
         foreach (var other in new FrameworkElement[] { DownloadCategories, DownloadContent, DownloadInstaller })
@@ -1077,8 +1022,6 @@ public partial class MainWindow : Window
         UiAnim.SlideInX(view, 22);
     }
 
-    // ---------------- 模组 / 资源包 / 光影（Modrinth + CurseForge） ----------------
-
     private ContentKind _contentKind = ContentKind.Mod;
     private ContentProvider _contentProvider = ContentProvider.Modrinth;
     private ContentKind? _contentLoadedKind;
@@ -1086,7 +1029,6 @@ public partial class MainWindow : Window
     private bool _contentBusy;
     private readonly Dictionary<string, ContentRowUi> _contentRows = new();
 
-    /// <summary>游戏版本下拉的前两项：跟随整合包 / 全部版本，后面才是具体版本号。</summary>
     private const string FollowPack = "跟随整合包";
     private const string AnyVersion = "全部版本";
 
@@ -1101,7 +1043,6 @@ public partial class MainWindow : Window
         public bool VersionsLoaded;
     }
 
-    /// <summary>三个筛选下拉的初始化：版本、加载器、数据源。</summary>
     private void InitContentFilters()
     {
         _syncingSource = true;
@@ -1126,7 +1067,6 @@ public partial class MainWindow : Window
         _syncingSource = false;
     }
 
-    /// <summary>把官方清单里的正式版填进「游戏版本」下拉（每次打开下载页刷新一次）。</summary>
     private void FillContentMcVersions()
     {
         var current = CmbContentMc.SelectedItem as string ?? FollowPack;
@@ -1139,19 +1079,16 @@ public partial class MainWindow : Window
         foreach (var version in VersionsFor("release"))
             CmbContentMc.Items.Add(version.Id);
 
-        // 之前选的是具体版本就尽量保留，否则回到「跟随整合包」
         CmbContentMc.SelectedItem = CmbContentMc.Items.Contains(current) ? current : FollowPack;
         _syncingSource = false;
     }
 
-    /// <summary>切到某个内容来源：改标题、刷新提示，必要时自动搜一次热门。</summary>
     private void PrepareContentSource()
     {
         TxtContentTitle.Text = ContentTypes.DisplayName(_contentKind);
         FillContentMcVersions();
         UpdateContentHint();
 
-        // 资源包与光影没有加载器概念
         CmbContentLoader.IsEnabled = _contentKind == ContentKind.Mod;
 
         if (_contentLoadedKind == _contentKind && _contentLoadedProvider == _contentProvider) return;
@@ -1197,7 +1134,6 @@ public partial class MainWindow : Window
         SetStatus(_cfg.CfApiKey.Length > 0 ? "CurseForge API Key 已保存" : "已清空 CurseForge API Key");
     }
 
-    /// <summary>提示行：过滤条件、数据源与安装目标目录。</summary>
     private void UpdateContentHint()
     {
         var dir = ContentTypes.TargetDir(_cfg, _currentPack?.Id ?? "", _contentKind);
@@ -1222,12 +1158,10 @@ public partial class MainWindow : Window
     private static string Upper(string text) =>
         text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
-    /// <summary>按两个下拉与当前整合包算出实际用于搜索的过滤条件。</summary>
     private (string? McVersion, string? Loader) ContentFilter()
     {
         var pack = _currentPack;
 
-        // 游戏版本：跟随整合包 → 沿继承链找原版；全部版本 → 不过滤；否则用选中值
         var mcChoice = CmbContentMc.SelectedItem as string ?? FollowPack;
         var mc = mcChoice switch
         {
@@ -1256,7 +1190,6 @@ public partial class MainWindow : Window
         return (mc, loader);
     }
 
-    /// <summary>沿 inheritsFrom 链找到最顶层的原版 id，即 Minecraft 版本。</summary>
     private string? McVersionOf(string versionId)
     {
         var dir = Paths.VersionsDir(_cfg.GameDir);
@@ -1359,7 +1292,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>搜索结果行：图标 + 标题 + 简介，点开是版本列表。</summary>
     private Border BuildContentRow(ContentProject project)
     {
         var chevron = new TextBlock
@@ -1407,7 +1339,6 @@ public partial class MainWindow : Window
             HorizontalAlignment = System.Windows.HorizontalAlignment.Right
         };
 
-        // 右侧状态：默认提示「选择版本」，装完变成已安装的版本号
         var state = new TextBlock
         {
             Text = "选择版本",
@@ -1482,7 +1413,6 @@ public partial class MainWindow : Window
         return card;
     }
 
-    /// <summary>图标：先放字母块占位，Modrinth 的图下到后再替换成真图（webp 解不了就保持占位）。</summary>
     private FrameworkElement BuildContentIcon(ContentProject project, int size)
     {
         var letter = (project.Title.Length > 0 ? project.Title[0] : '?').ToString().ToUpperInvariant();
@@ -1533,14 +1463,13 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // webp 之类的格式解不了，保留字母块
+
             }
         });
 
         return block;
     }
 
-    /// <summary>按标题算一个稳定的底色，让占位图标不至于全是同一个颜色。</summary>
     private static SolidColorBrush LetterBrush(string title)
     {
         var palette = new[]
@@ -1554,7 +1483,6 @@ public partial class MainWindow : Window
         return new SolidColorBrush(palette[Math.Abs(sum) % palette.Length]);
     }
 
-    /// <summary>展开 / 收起某个项目的版本列表，第一次展开时才去拉版本。</summary>
     private async Task ToggleContentVersionsAsync(ContentProject project, ContentRowUi ui)
     {
         var expand = !ui.Expanded;
@@ -1596,7 +1524,6 @@ public partial class MainWindow : Window
                     return;
                 }
 
-                // 大项目的版本数以千计，只渲染最新的一批
                 const int maxRows = 30;
                 var shown = versions.Take(maxRows).ToList();
 
@@ -1635,7 +1562,6 @@ public partial class MainWindow : Window
         UiAnim.Expand(ui.List, expand);
     }
 
-    /// <summary>版本行：版本名 + 支持的游戏版本 + 加载器 + 时间 + 大小，点击即下载。</summary>
     private Border BuildContentVersionRow(ContentProject project, ContentVersion version,
         TextBlock state)
     {
@@ -1691,7 +1617,6 @@ public partial class MainWindow : Window
         return row;
     }
 
-    /// <summary>把一个文件下载到当前整合包对应的目录；已存在则提示。</summary>
     private async Task InstallContentAsync(ContentProject project, ContentVersion version,
         Border row, TextBlock meta, TextBlock state)
     {
@@ -1722,8 +1647,6 @@ public partial class MainWindow : Window
                 ? await CurseForgeService.DownloadAsync(version, dir)
                 : await ModrinthService.DownloadAsync(version, dir);
 
-            // meta 在下载开始时被临时改成「下载中…」，装完必须换回原来的版本信息，
-            // 否则行右侧会一直卡在「下载中…」看着像没下完。
             meta.Text = original;
             MarkInstalled(state, version);
             UiAnim.ForegroundTo(meta, Color.FromRgb(0x1F, 0x5C, 0x3F));
@@ -1746,7 +1669,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>装完之后把行右侧的状态换成已安装的版本号。</summary>
     private static void MarkInstalled(TextBlock state, ContentVersion version)
     {
         state.Text = $"已安装 {version.VersionNumber}";
@@ -1763,9 +1685,6 @@ public partial class MainWindow : Window
         bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024.0):0.0} MB" :
         bytes > 0 ? $"{bytes / 1024.0:0.0} KB" : "—";
 
-
-
-    /// <summary>下载界面整窗覆盖：每次都从分类视图开始，并确保清单已加载。</summary>
     private void OpenDownloadOverlay()
     {
         PickerOverlay.Visibility = Visibility.Collapsed;
@@ -1788,7 +1707,6 @@ public partial class MainWindow : Window
         UiAnim.OverlayOut(DownloadOverlay, RestoreNavSelection);
     }
 
-    /// <summary>关掉覆盖层后把导航高亮还给当前页面，否则「下载」会一直亮着。</summary>
     private void RestoreNavSelection()
     {
         var nav = _currentPage switch
@@ -1799,8 +1717,6 @@ public partial class MainWindow : Window
 
         nav.IsChecked = true;
     }
-
-    // ---------------- 下载分类（带边框的菜单卡片） ----------------
 
     private sealed record CategoryDef(string Key, string Title, string Hint);
 
@@ -1834,7 +1750,6 @@ public partial class MainWindow : Window
     private static readonly Brush MenuCardBorder = new SolidColorBrush(Color.FromRgb(0xE4, 0xE8, 0xEE));
     private static readonly Brush MenuCardBorderOpen = new SolidColorBrush(Color.FromRgb(0xB8, 0xD2, 0xC2));
 
-    /// <summary>每个分类一张带边框的卡片：标题行 + 缩进的下级版本列表。</summary>
     private void BuildCategorySections()
     {
         if (_sections.Count > 0) return;
@@ -1949,7 +1864,7 @@ public partial class MainWindow : Window
 
         if (animate)
         {
-            // 展开：高度从 0 撑开，箭头转 90°，行逐条淡入
+
             UiAnim.Expand(ui.List, expand);
             UiAnim.Rotate(ui.Chevron, expand);
             if (expand) StaggerRows(ui.List);
@@ -1970,7 +1885,6 @@ public partial class MainWindow : Window
             : new SolidColorBrush(Color.FromRgb(0x1B, 0x1D, 0x21));
     }
 
-    /// <summary>让一个列表里的行错峰淡入，避免整块内容凭空出现。</summary>
     private static void StaggerRows(Panel list, int stepMs = 18, int maxDelay = 240)
     {
         var delay = 0;
@@ -2006,7 +1920,6 @@ public partial class MainWindow : Window
         ui.RowCount = list.Count;
     }
 
-    /// <summary>卡片内的版本行：缩进、无独立边框，悬停高亮。</summary>
     private Border BuildMenuVersionRow(string category, VersionSummary version)
     {
         var id = new TextBlock
@@ -2055,7 +1968,6 @@ public partial class MainWindow : Window
         return row;
     }
 
-    /// <summary>清单加载完（或换源）后重建分类卡片，默认展开「最新版」。</summary>
     private void RefreshCategorySections()
     {
         BuildCategorySections();
@@ -2072,7 +1984,6 @@ public partial class MainWindow : Window
             ui.Card.BorderBrush = MenuCardBorder;
         }
 
-        // 首屏不做展开动画，直接就位
         if (VersionsFor("latest").Count > 0) ToggleSection("latest", animate: false);
     }
 
@@ -2082,10 +1993,6 @@ public partial class MainWindow : Window
     private static string FormatDate(DateTimeOffset time) =>
         time.ToLocalTime().ToString("yyyy/M/d HH:mm");
 
-    /// <summary>
-    /// 进入安装视图：版本已在卡片列表里选好，这里一次配齐「本体 + 加载器」。
-    /// 装出来的只有 1 个整合包，原版文件是它的依赖底座，不需要用户单独装。
-    /// </summary>
     private void OpenInstaller(string category, string? preferredVersionId = null)
     {
         _currentCategory = category;
@@ -2127,7 +2034,7 @@ public partial class MainWindow : Window
             var error = PackNaming.Validate(packName, _cfg.GameDir);
             if (error is not null)
             {
-                // 自动生成的名字撞车（比如同一个组合装第二次）就直接用安装器给的默认 id
+
                 var auto = _dlAutoName is { Length: > 0 } &&
                            string.Equals(packName, _dlAutoName, StringComparison.Ordinal);
 
@@ -2143,7 +2050,6 @@ public partial class MainWindow : Window
             }
         }
 
-        // 一次装完：原版 + 加载器合成一个整合包
         var finalId = await InstallCombinedAsync(id, kind, loaderVersion, packName);
         if (finalId is null) return;
 
@@ -2155,10 +2061,6 @@ public partial class MainWindow : Window
         UpdateDlSummary();
     }
 
-    /// <summary>
-    /// 一体化安装：Minecraft 本体（+ 可选加载器）一次装完，返回最终整合包 id，失败返回 null。
-    /// 选了加载器时原版由 LoaderService 内部先补齐，全程只有一条进度、一次结果。
-    /// </summary>
     private async Task<string?> InstallCombinedAsync(string mcVersion, LoaderKind? kind, string? loaderVersion,
         string packName)
     {
@@ -2205,8 +2107,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 安装视图的加载器菜单 ----------------
-
     private sealed class LoaderMenuUi
     {
         public LoaderKind Kind;
@@ -2230,7 +2130,6 @@ public partial class MainWindow : Window
     private string? _dlLoaderVersion;
     private string? _dlAutoName;
 
-    /// <summary>进入安装视图：清空选择，四行加载器同时开始拉版本（镜像优先）。</summary>
     private void PrepareLoaderMenus()
     {
         BuildLoaderMenus();
@@ -2265,7 +2164,6 @@ public partial class MainWindow : Window
             _ = LoadLoaderVersionsAsync(kind, mc);
     }
 
-    /// <summary>安装视图刚打开时，四行加载器菜单依次淡入。</summary>
     private void AnimateLoaderMenus()
     {
         var delay = 0;
@@ -2391,7 +2289,7 @@ public partial class MainWindow : Window
 
         try
         {
-            // 安装界面的加载器版本优先走国内镜像，快且不受官方源波动影响
+
             var versions = await LoaderService.GetLoaderVersionsAsync(kind, mcVersion, preferMirror: true);
             ui.Versions = versions.ToList();
             ui.Loaded = true;
@@ -2518,7 +2416,6 @@ public partial class MainWindow : Window
         _dlLoaderKind = ui.Kind;
         _dlLoaderVersion = version;
 
-        // 选完收起菜单，头部显示已选版本
         ui.List.Visibility = Visibility.Collapsed;
         ui.Separator.Visibility = Visibility.Collapsed;
         ui.Chevron.Text = "\u25b8";
@@ -2550,10 +2447,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>
-    /// 选了加载器就自动给出一个「版本-加载器-加载器版本」的名字；
-    /// 只在名称框为空或仍是上次自动生成的值时覆盖，用户自己写的名字不动。
-    /// </summary>
     private void UpdateDlNameSuggestion()
     {
         if (_dlLoaderKind is not { } kind || string.IsNullOrWhiteSpace(_dlLoaderVersion))
@@ -2575,7 +2468,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>把「这次到底装什么」写成一句话：本体 + 加载器 = 一个整合包。</summary>
     private void UpdateDlSummary()
     {
         var mc = _selectedDlVersion?.Id ?? "未选择";
@@ -2622,7 +2514,6 @@ public partial class MainWindow : Window
 
         "release" => _allVersions.Where(v => v.Type == "release").ToList(),
 
-        // 预览版排除愚人节整活
         "snapshot" => _allVersions
             .Where(v => v.Type == "snapshot" && !AprilFoolsIds.Contains(v.Id))
             .ToList(),
@@ -2694,9 +2585,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 登录（正版 / 离线） ----------------
-
-    /// <summary>把配置里的登录方式同步到分段控件与两个面板。</summary>
     private void ApplyAuthMode()
     {
         _syncingAuth = true;
@@ -2724,7 +2612,6 @@ public partial class MainWindow : Window
         SetStatus(microsoft ? "已切到正版登录" : "已切到离线登录");
     }
 
-    /// <summary>按登录状态切换正版面板的三个子视图。</summary>
     private void UpdateMicrosoftUi()
     {
         var signedIn = _cfg.HasMicrosoftAccount;
@@ -2741,7 +2628,6 @@ public partial class MainWindow : Window
             TxtMsUuid.Text = $"UUID {_cfg.MsUuid} · {state}";
         }
 
-        // 应用 ID 有内置的兜底，这里只提示登录本身可能遇到的问题
         TxtMsHint.Text = "";
     }
 
@@ -2749,7 +2635,6 @@ public partial class MainWindow : Window
     {
         if (_msLoginCts is not null) return;
 
-        // 不内置任何应用 ID：没填就提示用户去 Azure 注册一个自己的
         var clientId = _cfg.EffectiveMsClientId;
         if (!MicrosoftAuth.HasClientId(clientId))
         {
@@ -2787,7 +2672,6 @@ public partial class MainWindow : Window
                 if (_msLoginCts is { IsCancellationRequested: false }) TxtMsWait.Text = text;
             });
 
-            // 每一步的结果都进日志：界面上只看到一句话，排查要看 logs/launcher-*.log
             var account = await MicrosoftAuth.WaitForLoginAsync(
                 clientId, device, progress, _msLoginCts.Token, LogBus.Info);
             ApplyMicrosoftAccount(account);
@@ -2890,7 +2774,6 @@ public partial class MainWindow : Window
             : "应用 ID 已清空，将使用启动器自带的应用 ID");
     }
 
-    /// <summary>启动时静默续期，避免每次都要重新授权。</summary>
     private async Task TrySilentRefreshAsync()
     {
         if (_cfg.AuthMode != "microsoft" || !_cfg.HasMicrosoftAccount) return;
@@ -2911,7 +2794,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>启动前确定用哪个账号；凭证过期会先续期，失败则中止启动。</summary>
     private async Task<AuthSession?> ResolveSessionAsync()
     {
         if (_cfg.AuthMode != "microsoft")
@@ -2990,8 +2872,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 整合包设置 ----------------
-
     private void BtnModpackSettings_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { ContextMenu: { } menu } button) return;
@@ -3005,7 +2885,7 @@ public partial class MainWindow : Window
 
     private void MenuOpenModsDir_Click(object sender, RoutedEventArgs e)
     {
-        // 开了版本隔离就是当前整合包专属的 mods 目录
+
         var modsDir = _cfg.ModsDir(_currentPack?.Id ?? "");
         try
         {
@@ -3022,7 +2902,6 @@ public partial class MainWindow : Window
 
     private async void MenuRepairPack_Click(object sender, RoutedEventArgs e) => await InstallAsync();
 
-    /// <summary>装 / 换加载器统一走「下载」页：选版本 → 选加载器 → 安装。</summary>
     private void MenuLoaderSettings_Click(object sender, RoutedEventArgs e) => OpenDownloadOverlay();
 
     private void OpenDirectory(string dir)
@@ -3080,8 +2959,6 @@ public partial class MainWindow : Window
             SetStatus("正在解析版本…");
             var resolved = await VersionResolver.ResolveAsync(_cfg.GameDir, version.Id);
 
-            // NeoForge 的运行依赖（universal / srg）可能缺失，启动前先补一次；
-            // 补过之后版本 JSON 变了，需要重新解析才能带上新的 classpath。
             if (await NeoForgeRuntime.EnsureAsync(_cfg.GameDir, version.Id, resolved.MergedJson, LogBus.Info))
                 resolved = await VersionResolver.ResolveAsync(_cfg.GameDir, version.Id);
 
@@ -3102,7 +2979,7 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // 忽略，按默认值处理
+
             }
 
             if (java.MajorVersion < required)
@@ -3135,9 +3012,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 安装 ----------------
-
-    /// <summary>「校验 / 修复」：对左下角当前选中的整合包走一遍安装流程。</summary>
     private async Task InstallAsync()
     {
         if (_busy) return;
@@ -3185,8 +3059,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------------- 辅助 ----------------
-
     private bool TryGetVersion(out VersionSummary version)
     {
         version = _currentPack is null
@@ -3210,7 +3082,6 @@ public partial class MainWindow : Window
         return false;
     }
 
-    /// <summary>用户名一改就落盘，避免关掉窗口后回到默认值。</summary>
     private void TxtName_TextChanged(object sender, TextChangedEventArgs e)
     {
         _nameSaveTimer.Stop();

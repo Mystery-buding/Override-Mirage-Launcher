@@ -4,15 +4,10 @@ using System.Text.Json.Nodes;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 整合包命名：把 versions/&lt;id&gt; 目录及其版本 JSON 改名，
-/// 同步更新以它为 inheritsFrom 的子版本，保证加载器版本不会断链。
-/// </summary>
 public static class PackNaming
 {
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
-    /// <summary>校验名称；通过返回 null，否则返回给用户看的错误原因。</summary>
     public static string? Validate(string rawName, string gameDir, string? currentId = null)
     {
         var name = rawName.Trim();
@@ -33,10 +28,6 @@ public static class PackNaming
         return null;
     }
 
-    /// <summary>
-    /// 把旧 id 的整合包改名为新名称，返回最终 id。
-    /// 会同步改写目录名、版本 JSON 文件名与其中的 id 字段、同名客户端 jar，以及子版本的 inheritsFrom。
-    /// </summary>
     public static async Task<string> RenameAsync(string gameDir, string oldId, string newName,
         CancellationToken ct = default)
     {
@@ -57,7 +48,7 @@ public static class PackNaming
 
         try
         {
-            // 目录已经搬走，后续操作都在新目录里进行
+
             var sourceJson = Path.Combine(newDir, oldId + ".json");
             var newJson = Path.Combine(newDir, newName + ".json");
 
@@ -70,7 +61,6 @@ public static class PackNaming
             if (!string.Equals(newJson, sourceJson, StringComparison.OrdinalIgnoreCase) && File.Exists(sourceJson))
                 File.Delete(sourceJson);
 
-            // 客户端 jar：GameLauncher 按 <JarId>/<JarId>.jar 取
             var oldJar = Path.Combine(newDir, oldId + ".jar");
             if (File.Exists(oldJar))
                 File.Move(oldJar, Path.Combine(newDir, newName + ".jar"));
@@ -79,7 +69,7 @@ public static class PackNaming
         }
         catch
         {
-            // 改名途中失败就尽量回滚，避免留下半个整合包
+
             try
             {
                 if (Directory.Exists(newDir) && !Directory.Exists(oldDir))
@@ -87,7 +77,7 @@ public static class PackNaming
             }
             catch
             {
-                // 回滚失败时保留现场，错误信息由调用方展示
+
             }
 
             throw;
@@ -97,7 +87,6 @@ public static class PackNaming
         return newName;
     }
 
-    /// <summary>把 inheritsFrom 指向旧 id 的子版本改到新 id。</summary>
     private static async Task UpdateChildInheritsAsync(string versionsDir, string oldId, string newId,
         CancellationToken ct)
     {

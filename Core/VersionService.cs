@@ -41,7 +41,6 @@ public static class VersionService
 
     private static VersionManifest? _cached;
 
-    /// <summary>切换下载源后需要丢弃旧清单，让它按新源重新拉取。</summary>
     public static void ResetCache() => _cached = null;
 
     public static async Task<VersionManifest> GetManifestAsync(bool forceRefresh = false, CancellationToken ct = default)

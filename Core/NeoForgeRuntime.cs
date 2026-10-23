@@ -6,29 +6,10 @@ using System.Text.Json.Nodes;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 补全新版 NeoForge（1.21+ / 26.x）官方安装器留下的坑。
-///
-/// NeoForge 的安装器只写了一份「半成品」版本 JSON：
-///   - 里面既没有 <c>net.neoforged:neoforge:&lt;版本&gt;:universal</c>，
-///     也没有它自己生成的 <c>minecraft-client-patched</c>；
-///   - FML 启动时会去 classpath 找 <c>net/minecraft/client/&lt;mc&gt;-&lt;neoform&gt;/client-&lt;mc&gt;-&lt;neoform&gt;-srg.jar</c>，
-///     找不到就报 "Your NeoForge installation is corrupted. Please try to reinstall NeoForge."
-///
-/// 这里做两件事：
-///   1. 把安装器生成的 patched jar 复制成 FML 认的那个 srg 名字（补上 Minecraft-Dists 清单属性）；
-///   2. 把 universal jar 与 srg jar 以「本地构件」的形式写进版本 JSON 的 libraries，
-///      这样它们只进 classpath、不会被当成需要下载的文件。
-/// </summary>
 public static class NeoForgeRuntime
 {
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
-    /// <summary>
-    /// 必要时修补 NeoForge 版本的运行依赖。
-    /// </summary>
-    /// <param name="versionJson">版本 JSON 原文（合并前或合并后都可以，只要带 arguments.game 与 mainClass）</param>
-    /// <returns>是否改动了版本 JSON；改了的话调用方需要重新解析一次。</returns>
     public static async Task<bool> EnsureAsync(string gameDir, string versionId, string versionJson,
         Action<string>? log = null, CancellationToken ct = default)
     {
@@ -52,12 +33,10 @@ public static class NeoForgeRuntime
         var librariesDir = Paths.LibrariesDir(gameDir);
         var changed = false;
 
-        // 1) NeoForge 本体（universal jar，安装器已经放进 libraries）
         var universalRel = $"net/neoforged/neoforge/{forgeVersion}/neoforge-{forgeVersion}-universal.jar";
         if (File.Exists(ToLocal(librariesDir, universalRel)))
             changed |= AddLocalLibrary(node, $"net.neoforged:neoforge:{forgeVersion}:universal", universalRel);
 
-        // 2) FML 认的 srg jar：由安装器生成的 patched jar 改名而来
         var mcpVersion = $"{mcVersion}-{neoFormVersion}";
         var srgRel = $"net/minecraft/client/{mcpVersion}/client-{mcpVersion}-srg.jar";
         var srgPath = ToLocal(librariesDir, srgRel);
@@ -91,7 +70,6 @@ public static class NeoForgeRuntime
         return true;
     }
 
-    /// <summary>取 arguments.game 里某个开关后面的值，例如 --fml.neoForgeVersion 26.3.0.95。</summary>
     private static string GameArgValue(JsonObject node, string flag)
     {
         if (node["arguments"] is not JsonObject arguments) return "";
@@ -99,7 +77,7 @@ public static class NeoForgeRuntime
 
         for (var i = 0; i < game.Count - 1; i++)
         {
-            // 数组里混有 {"rules":…,"value":…} 之类的对象，不能直接 GetValue<string>()
+
             if (game[i] is JsonValue key && key.TryGetValue(out string? token) && token == flag)
                 return game[i + 1] is JsonValue value && value.TryGetValue(out string? result) ? result : "";
         }
@@ -107,10 +85,6 @@ public static class NeoForgeRuntime
         return "";
     }
 
-    /// <summary>
-    /// 往版本 JSON 里塞一个「本地构件」：有 path、url 为空。
-    /// CollectLibraries 见到空 url 会跳过下载但仍把它加进 classpath。
-    /// </summary>
     private static bool AddLocalLibrary(JsonObject node, string name, string relPath)
     {
         var libraries = node["libraries"] as JsonArray ?? new JsonArray();
@@ -141,7 +115,6 @@ public static class NeoForgeRuntime
         return true;
     }
 
-    /// <summary>复制 patched jar，并在清单的主段里补上 FML 需要的 Minecraft-Dists。</summary>
     private static void CreateSrgJar(string patchedPath, string srgPath)
     {
         var tmp = srgPath + ".part";
@@ -180,7 +153,6 @@ public static class NeoForgeRuntime
         File.Move(tmp, srgPath, true);
     }
 
-    /// <summary>在 MANIFEST.MF 主段（第一段，空行之前）追加 Minecraft-Dists: client。</summary>
     internal static string WithMinecraftDists(string manifest)
     {
         if (manifest.Contains("Minecraft-Dists:", StringComparison.OrdinalIgnoreCase)) return manifest;
@@ -200,6 +172,6 @@ public static class NeoForgeRuntime
 
     private static void TryDelete(string path)
     {
-        try { File.Delete(path); } catch { /* 忽略 */ }
+        try { File.Delete(path); } catch {  }
     }
 }

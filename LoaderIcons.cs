@@ -6,10 +6,6 @@ using OverrideMirageLauncher.Core;
 
 namespace OverrideMirageLauncher;
 
-/// <summary>
-/// 加载器图标：Fabric / NeoForge 用 PCL 的方块素材，Forge 用铁砧（Anvil），
-/// Quilt 没有现成素材，用紫底字母块兜底。
-/// </summary>
 public static class LoaderIcons
 {
     public static FrameworkElement Create(LoaderKind kind, double size)

@@ -2,9 +2,6 @@ using System.IO;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 极简日志总线：同时写界面和文件。
-/// </summary>
 public static class LogBus
 {
     private static readonly object Gate = new();
@@ -39,7 +36,7 @@ public static class LogBus
             }
             catch
             {
-                // 忽略磁盘写入异常
+
             }
         }
 

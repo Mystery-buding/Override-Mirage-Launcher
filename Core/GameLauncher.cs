@@ -5,9 +5,6 @@ using System.Text;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 拼装启动参数并拉起游戏进程。
-/// </summary>
 public static class GameLauncher
 {
     public static Process Launch(AppConfig cfg, ResolvedVersion resolved, JavaInfo java, Action<string> log,
@@ -18,8 +15,6 @@ public static class GameLauncher
         var versionId = resolved.VersionId;
         var versionDir = Path.Combine(Paths.VersionsDir(gameDir), versionId);
 
-        // 版本隔离：游戏进程的工作目录（mods / 存档 / 配置）每个整合包一份，
-        // 版本、依赖库、资源仍然共用 gameDir，不会重复下载。
         var runDir = cfg.RunDir(versionId);
         Directory.CreateDirectory(runDir);
         MigrateLegacyFiles(gameDir, runDir, log);
@@ -28,7 +23,6 @@ public static class GameLauncher
         using var doc = System.Text.Json.JsonDocument.Parse(resolved.MergedJson);
         var root = doc.RootElement;
 
-        // ---------- classpath ----------
         var librariesDir = Paths.LibrariesDir(gameDir);
         var classpathParts = new List<string>();
         foreach (var lib in MinecraftInstaller.CollectLibraries(root))
@@ -47,7 +41,6 @@ public static class GameLauncher
         var classpath = string.Join(';', classpathParts);
         var nativesDir = Path.Combine(versionDir, "natives");
 
-        // ---------- 基础变量 ----------
         var assetIndexId = root.TryGetProperty("assetIndex", out var ai)
             ? VersionJson.GetString(ai, "id")
             : "legacy";
@@ -60,7 +53,7 @@ public static class GameLauncher
             ["assets_root"] = Paths.AssetsDir(gameDir),
             ["game_assets"] = Paths.AssetsDir(gameDir),
             ["assets_index_name"] = assetIndexId,
-            // 官方启动器传的是 32 位无连字符 UUID
+
             ["auth_uuid"] = session.Uuid.Replace("-", ""),
             ["auth_access_token"] = session.AccessToken,
             ["auth_session"] = session.AccessToken,
@@ -77,7 +70,6 @@ public static class GameLauncher
             ["resolution_height"] = "720"
         };
 
-        // log4j 配置路径
         if (root.TryGetProperty("logging", out var logging) &&
             logging.TryGetProperty("client", out var clientLog) &&
             clientLog.TryGetProperty("file", out var logFile))
@@ -87,7 +79,6 @@ public static class GameLauncher
             if (logId.Length > 0 && File.Exists(logPath)) vars["path"] = logPath;
         }
 
-        // ---------- JVM 参数 ----------
         var jvmArgs = new List<string>();
         var hasClasspath = false;
 
@@ -107,9 +98,6 @@ public static class GameLauncher
             jvmArgs.Add(classpath);
         }
 
-        // 本地库搜索路径统一在末尾追加，覆盖版本 JSON 的默认值。
-        // 新版（1.21+）版本 JSON 会写成 ${natives_directory}/java、/jna、/lwjgl、/netty，
-        // 把本地库拆到子目录里；这里同时包含根目录与各子目录，两种布局都能命中。
         var libraryDirs = new List<string> { nativesDir };
         foreach (var sub in new[] { "java", "jna", "lwjgl", "netty" })
         {
@@ -121,7 +109,6 @@ public static class GameLauncher
         jvmArgs.Insert(0, $"-Xmx{cfg.MemoryMb}M");
         jvmArgs.Insert(1, $"-Xms{Math.Min(cfg.MemoryMb / 2, 1024)}M");
 
-        // ---------- 游戏参数 ----------
         List<string> gameArgs;
         if (root.TryGetProperty("arguments", out arguments) &&
             arguments.TryGetProperty("game", out var gameArray))
@@ -133,7 +120,6 @@ public static class GameLauncher
         {
             gameArgs = VersionJson.EvaluateLegacyArguments(legacyRaw, vars);
 
-            // 老版本没有资源参数时补上
             if (!gameArgs.Contains("--assetsDir"))
             {
                 gameArgs.Add("--assetsDir");
@@ -151,7 +137,6 @@ public static class GameLauncher
         if (mainClass.Length == 0)
             throw new InvalidOperationException("版本文件中缺少 mainClass。");
 
-        // ---------- 启动 ----------
         var javaExe = ResolveJavaExe(java.Path);
         var psi = new ProcessStartInfo(javaExe)
         {
@@ -197,16 +182,11 @@ public static class GameLauncher
         return process;
     }
 
-    /// <summary>整合包运行目录里游戏自己会用到、但有时不会主动建的子目录。</summary>
     private static readonly string[] RunFolders =
     {
         "saves", "mods", "config", "resourcepacks", "shaderpacks", "screenshots", "logs"
     };
 
-    /// <summary>
-    /// 先把存档 / 模组这些目录建出来，省得游戏第一次写存档时因为目录不存在而失败。
-    /// 已经存在就什么都不做。
-    /// </summary>
     private static void EnsureRunFolders(string runDir, Action<string> log)
     {
         foreach (var name in RunFolders)
@@ -225,21 +205,14 @@ public static class GameLauncher
         }
     }
 
-    /// <summary>日志里的命令行要可直接复制运行，所以每个参数都加引号。</summary>
     private static string Quote(string text) =>
         text.Length == 0 || text.Contains(' ') ? "\"" + text + "\"" : text;
 
-    /// <summary>开启版本隔离后要搬进独立目录的旧共享目录。</summary>
     private static readonly string[] LegacyFolders =
     {
         "mods", "config", "resourcepacks", "shaderpacks", "saves", "screenshots"
     };
 
-    /// <summary>
-    /// 第一次为某个整合包创建独立目录时，把原来堆在 .minecraft 根目录里的
-    /// mods / 存档 / 配置搬进去，避免开隔离后旧内容「消失」。
-    /// 已经搬过（目录不存在或为空）就什么都不做。
-    /// </summary>
     private static void MigrateLegacyFiles(string gameDir, string runDir, Action<string> log)
     {
         if (string.Equals(gameDir, runDir, StringComparison.OrdinalIgnoreCase)) return;
@@ -265,9 +238,6 @@ public static class GameLauncher
         }
     }
 
-    /// <summary>
-    /// 离线模式 UUID：MD5("OfflinePlayer:&lt;name&gt;")，按 UUID v3 规则置位。
-    /// </summary>
     public static string OfflineUuid(string name)
     {
         var bytes = MD5.HashData(Encoding.UTF8.GetBytes("OfflinePlayer:" + name));
@@ -278,7 +248,7 @@ public static class GameLauncher
 
     private static string ResolveJavaExe(string javaPath)
     {
-        // 优先用 javaw，避免多一个控制台窗口
+
         var dir = Path.GetDirectoryName(javaPath);
         if (dir is not null)
         {

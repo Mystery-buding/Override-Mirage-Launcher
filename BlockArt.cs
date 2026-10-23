@@ -7,18 +7,11 @@ using OverrideMirageLauncher.Core;
 
 namespace OverrideMirageLauncher;
 
-/// <summary>
-/// 方块图标：16×16 像素纹理逐格贴到等轴测立方体的三个面上，
-/// 渲染成位图后缓存复用——等价于 PCL 的 Images/Blocks/*.png，
-/// 只是纹理由程序生成。
-/// 想换成自己的美术素材，把同名 PNG 放到 exe 同级的 images/blocks/ 即可覆盖。
-/// </summary>
 public static class BlockArt
 {
     private const int Tex = 16;
     private const double CanvasSize = 192;
 
-    /// <summary>自定义素材目录：images/blocks/{grass,command,dirt}.png</summary>
     public static string OverrideDir => Path.Combine(Paths.BaseDir, "images", "blocks");
 
     private static readonly Lazy<ImageSource> Grass = new(() =>
@@ -30,17 +23,12 @@ public static class BlockArt
     private static readonly Lazy<ImageSource> Ancient = new(() =>
         Load("dirt", "CobbleStone", () => Render(BuildDirtTexture(), BuildDirtTexture(), 1.0, 0.84, 0.68)));
 
-    /// <summary>读取内嵌素材（加载器图标等也走这里），缺失返回 null。</summary>
     public static ImageSource? LoaderAsset(string assetName) => LoadAsset(assetName);
 
     public static ImageSource GrassImage => Grass.Value;
     public static ImageSource CommandImage => Command.Value;
     public static ImageSource DirtImage => Ancient.Value;
 
-    /// <summary>
-    /// 把当前生效的图标导出成 PNG，方便二次编辑。
-    /// 内嵌素材直接原样写出；没有素材时才渲染程序生成的纹理。
-    /// </summary>
     public static void ExportAll(string dir, int pixelSize = 512)
     {
         Directory.CreateDirectory(dir);
@@ -59,11 +47,9 @@ public static class BlockArt
         Save(source ?? fallback(), path);
     }
 
-    /// <summary>优先级：images/blocks 覆盖 → 内嵌素材 → 程序生成。</summary>
     private static ImageSource Load(string overrideName, string assetName, Func<ImageSource> fallback) =>
         LoadOverride(overrideName) ?? LoadAsset(assetName) ?? fallback();
 
-    /// <summary>内嵌的 PCL 方块图标（Assets/Blocks，轻度引用并署名）。</summary>
     private static ImageSource? LoadAsset(string name)
     {
         try
@@ -95,11 +81,9 @@ public static class BlockArt
         encoder.Save(stream);
     }
 
-    // ---------------- 自定义素材 ----------------
-
     private static ImageSource? LoadOverride(string name)
     {
-        // 同时接受小写与 PCL 风格的命名
+
         foreach (var file in new[] { name + ".png", name + ".jpg", Capitalize(name) + ".png" })
         {
             var path = Path.Combine(OverrideDir, file);
@@ -129,9 +113,6 @@ public static class BlockArt
     private static string Capitalize(string name) =>
         name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
 
-
-    // ---------------- 纹理生成 ----------------
-
     private static Color[] BuildGrassTop()
     {
         var rnd = new Random(20261024);
@@ -152,7 +133,6 @@ public static class BlockArt
         var rnd = new Random(20261025);
         var pixels = new Color[Tex * Tex];
 
-        // 每一列草皮下沿的深度略有差异，形成参差的垂边
         var depth = new int[Tex];
         for (var x = 0; x < Tex; x++) depth[x] = 2 + rnd.Next(0, 3);
 
@@ -185,11 +165,11 @@ public static class BlockArt
                 Color baseColor;
 
                 if (x is 0 or Tex - 1 || y is 0 or Tex - 1)
-                    baseColor = Color.FromRgb(0x9A, 0x57, 0x22);        // 外框
+                    baseColor = Color.FromRgb(0x9A, 0x57, 0x22);
                 else if (x is >= 5 and <= 10 && y is >= 5 and <= 10)
-                    baseColor = Color.FromRgb(0xEC, 0xA0, 0x55);        // 中央亮块
+                    baseColor = Color.FromRgb(0xEC, 0xA0, 0x55);
                 else
-                    baseColor = Color.FromRgb(0xC9, 0x77, 0x37);        // 主体
+                    baseColor = Color.FromRgb(0xC9, 0x77, 0x37);
 
                 pixels[y * Tex + x] = Shift(baseColor, noise);
             }
@@ -213,8 +193,6 @@ public static class BlockArt
         return pixels;
     }
 
-    // ---------------- 等轴测渲染 ----------------
-
     private static ImageSource Render(Color[] topTexture, Color[] sideTexture,
         double topTint, double leftTint, double rightTint, int pixelSize = 192)
     {
@@ -225,7 +203,6 @@ public static class BlockArt
             Background = Brushes.Transparent
         };
 
-        // 立方体三个面的顶点（192 逻辑像素画布）
         var topA = new Point(96, 10);
         var topB = new Point(184, 54);
         var topD = new Point(8, 54);
@@ -253,7 +230,6 @@ public static class BlockArt
         return bitmap;
     }
 
-    /// <summary>把一个面的 16×16 纹理逐格贴成平行四边形。</summary>
     private static void DrawFace(Canvas canvas, Point a, Point b, Point d, Color[] texture, double tint)
     {
         for (var j = 0; j < Tex; j++)

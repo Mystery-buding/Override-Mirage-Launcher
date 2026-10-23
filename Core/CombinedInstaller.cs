@@ -1,24 +1,13 @@
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 一体化安装：Minecraft 本体（+ 可选模组加载器）一次装完，只产出 1 个整合包。
-///
-/// 装加载器时，原版文件由 <see cref="LoaderService"/> 内部作为依赖底座一起补齐，
-/// 用户不需要、也看不到「先装本体再装加载器」这两步；底座会被整合包列表自动隐藏。
-/// 界面与命令行（--combo）共用这一条路径。
-/// </summary>
 public static class CombinedInstaller
 {
-    /// <summary>「这次装的是什么」的一句话描述，用于进度与日志。</summary>
+
     public static string Describe(string mcVersion, LoaderKind? kind, string? loaderVersion) =>
         kind is { } k
             ? $"Minecraft {mcVersion} + {LoaderService.DisplayName(k)} {loaderVersion}"
             : $"Minecraft {mcVersion}";
 
-    /// <summary>
-    /// 一次装完。返回最终整合包 id（需要改名时已改好）。
-    /// packName 为空 / 与默认 id 相同 / 不可用时都保留安装器给的默认 id。
-    /// </summary>
     public static async Task<string> InstallAsync(AppConfig cfg, string mcVersion, LoaderKind? kind,
         string? loaderVersion, string? packName, IProgress<InstallProgress>? progress, Action<string> log,
         CancellationToken ct = default)

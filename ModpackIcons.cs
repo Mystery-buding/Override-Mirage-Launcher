@@ -8,10 +8,6 @@ using OverrideMirageLauncher.Core;
 
 namespace OverrideMirageLauncher;
 
-/// <summary>
-/// 整合包图标：优先用自带 icon.png，其次加载器徽标，最后草方块。
-/// 全部矢量绘制，不依赖任何图片资源。
-/// </summary>
 public static class ModpackIcons
 {
     public static FrameworkElement Create(ModpackEntry? pack, double size)
@@ -63,13 +59,10 @@ public static class ModpackIcons
         return CreateGrassBlock();
     }
 
-    /// <summary>正式版：贴了草皮纹理的草方块。</summary>
     public static FrameworkElement CreateGrassBlock() => BlockImage(BlockArt.GrassImage);
 
-    /// <summary>预览版：命令方块。</summary>
     public static FrameworkElement CreateCommandBlock() => BlockImage(BlockArt.CommandImage);
 
-    /// <summary>远古版：泥土块。</summary>
     public static FrameworkElement CreateDirtBlock() => BlockImage(BlockArt.DirtImage);
 
     private static FrameworkElement BlockImage(ImageSource source)

@@ -3,17 +3,11 @@ using System.Text.RegularExpressions;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 版本 JSON 的解析辅助：规则判定、参数求值、占位符替换。
-/// </summary>
 public static partial class VersionJson
 {
     [GeneratedRegex(@"\$\{([^}]+)\}", RegexOptions.Compiled)]
     private static partial Regex PlaceholderRegex();
 
-    /// <summary>
-    /// 判定带 rules 的条目是否适用于当前平台（Windows x64）。
-    /// </summary>
     public static bool RulesAllow(JsonElement element)
     {
         if (element.ValueKind != JsonValueKind.Object) return true;
@@ -33,8 +27,7 @@ public static partial class VersionJson
 
     private static bool RuleMatches(JsonElement rule)
     {
-        // features 表示启动器能力开关（如 quickPlay、demo）。本启动器一个都不启用，
-        // 因此带 features 的规则一律不匹配；否则 quickPlay 的几个互斥参数会被同时传入。
+
         if (rule.TryGetProperty("features", out var features) &&
             features.ValueKind == JsonValueKind.Object)
             return false;
@@ -59,9 +52,6 @@ public static partial class VersionJson
         return true;
     }
 
-    /// <summary>
-    /// 把 arguments 数组求值成字符串列表，并替换占位符。
-    /// </summary>
     public static List<string> EvaluateArguments(JsonElement array, IReadOnlyDictionary<string, string> vars)
     {
         var result = new List<string>();
@@ -102,9 +92,6 @@ public static partial class VersionJson
             vars.TryGetValue(m.Groups[1].Value, out var v) ? v : "");
     }
 
-    /// <summary>
-    /// 旧版本用 minecraftArguments 字符串，按空格切分并替换占位符。
-    /// </summary>
     public static List<string> EvaluateLegacyArguments(string raw, IReadOnlyDictionary<string, string> vars)
     {
         return raw.Split(' ', StringSplitOptions.RemoveEmptyEntries)
@@ -112,9 +99,6 @@ public static partial class VersionJson
                   .ToList();
     }
 
-    /// <summary>
-    /// 读取版本 JSON 中需要的 Java 主版本（缺省按 8 处理）。
-    /// </summary>
     public static int GetRequiredJavaMajor(JsonElement root)
     {
         if (root.TryGetProperty("javaVersion", out var jv) &&

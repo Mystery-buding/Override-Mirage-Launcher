@@ -5,7 +5,6 @@ using System.Text.Json;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>设备码授权第一步返回的信息。</summary>
 public sealed record DeviceCodeInfo(
     string DeviceCode,
     string UserCode,
@@ -13,7 +12,6 @@ public sealed record DeviceCodeInfo(
     int IntervalSeconds,
     int ExpiresInSeconds);
 
-/// <summary>登录成功后用于拼装启动参数的会话信息。</summary>
 public sealed record AuthSession(
     string PlayerName,
     string Uuid,
@@ -29,7 +27,6 @@ public sealed record AuthSession(
         new(name, uuid, accessToken, "msa", xuid, clientId);
 }
 
-/// <summary>正版账号。AccessToken 是 Minecraft 服务的令牌，不是微软令牌。</summary>
 public sealed record MicrosoftAccount(
     string Name,
     string Uuid,
@@ -37,24 +34,13 @@ public sealed record MicrosoftAccount(
     DateTimeOffset ExpiresAt,
     string RefreshToken);
 
-/// <summary>
-/// 微软正版登录：OAuth 设备码授权 → Xbox Live → XSTS → Minecraft 服务。
-/// 零第三方依赖，只用 HttpClient 与 System.Text.Json。
-/// 需要一个在 Azure 门户注册的「移动和桌面应用程序」，并开启「允许公共客户端流」。
-/// </summary>
 public static class MicrosoftAuth
 {
-    /// <summary>
-    /// 提示文案：没有配置应用 ID 时统一用它，避免在源码里内置任何人的 Azure 应用 ID。
-    /// 客户端 ID 本身虽不是机密（公共客户端没有 client secret），但内置别人的 ID 会让
-    /// Microsoft / Mojang 把该 ID 名下的流量与风险算到登记者头上，所以这里一律不内置。
-    /// </summary>
+
     public const string NoClientIdHint = "还没有配置 Azure 应用 ID";
 
-    /// <summary>取实际使用的应用 ID：只返回用户自己配置的那个，不做任何内置兜底。</summary>
     public static string ResolveClientId(string? configured) => (configured ?? string.Empty).Trim();
 
-    /// <summary>是否已配置可用的应用 ID。</summary>
     public static bool HasClientId(string? configured) => !string.IsNullOrWhiteSpace(configured);
 
     private const string DeviceCodeUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
@@ -68,9 +54,6 @@ public static class MicrosoftAuth
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-    // ---------------- 设备码授权 ----------------
-
-    /// <summary>申请设备码：返回给用户输入的一次性代码与授权地址。</summary>
     public static async Task<DeviceCodeInfo> StartDeviceCodeAsync(string clientId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(clientId))
@@ -99,12 +82,6 @@ public static class MicrosoftAuth
             root.TryGetProperty("expires_in", out var expires) ? expires.GetInt32() : 900);
     }
 
-    /// <summary>
-    /// 轮询授权结果，成功后一路换取 Minecraft 令牌与玩家档案。
-    /// 用户取消 / 超时会抛 OperationCanceledException 或 TimeoutException。
-    /// trace 会收到每一步的结果（含失败时的响应体），用来定位到底卡在哪一步；
-    /// 只记录状态与报错，不写任何令牌。
-    /// </summary>
     public static async Task<MicrosoftAccount> WaitForLoginAsync(
         string clientId, DeviceCodeInfo device, IProgress<string>? progress, CancellationToken ct,
         Action<string>? trace = null)
@@ -161,7 +138,6 @@ public static class MicrosoftAuth
         throw new TimeoutException("等待授权超时，请重新发起登录。");
     }
 
-    /// <summary>用 refresh_token 续期，避免每次启动都要重新授权。</summary>
     public static async Task<MicrosoftAccount> RefreshAsync(string clientId, string refreshToken, CancellationToken ct)
     {
         using var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -187,13 +163,11 @@ public static class MicrosoftAuth
         return await ExchangeAsync(clientId, access, refresh, expiresIn, null, ct).ConfigureAwait(false);
     }
 
-    // ---------------- Xbox → Minecraft ----------------
-
     private static async Task<MicrosoftAccount> ExchangeAsync(
         string clientId, string microsoftToken, string refreshToken, int expiresIn,
         Action<string>? trace, CancellationToken ct)
     {
-        // 1. Xbox Live 用户认证
+
         var xblBody = JsonSerializer.Serialize(new
         {
             Properties = new
@@ -224,7 +198,6 @@ public static class MicrosoftAuth
 
         trace?.Invoke("第 1 步 Xbox Live 认证：成功（拿到 user token）");
 
-        // 2. XSTS 授权
         var xstsBody = JsonSerializer.Serialize(new
         {
             Properties = new
@@ -254,7 +227,6 @@ public static class MicrosoftAuth
 
         trace?.Invoke("第 2 步 XSTS 授权：成功（拿到 XSTS token）");
 
-        // 3. 换取 Minecraft 访问令牌
         var mcBody = JsonSerializer.Serialize(new
         {
             identityToken = $"XBL3.0 x={xsts.UserHash};{xsts.Token}"
@@ -282,7 +254,6 @@ public static class MicrosoftAuth
         if (mcToken.Length == 0)
             throw new InvalidOperationException("Minecraft 服务没有返回访问令牌。");
 
-        // 4. 读取玩家档案（名字与 UUID）
         using var request = new HttpRequestMessage(HttpMethod.Get, MinecraftProfileUrl);
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", mcToken);
 
@@ -323,8 +294,6 @@ public static class MicrosoftAuth
         }
     }
 
-    // ---------------- 辅助 ----------------
-
     private static (string Token, string UserHash) ParseXboxToken(string json)
     {
         using var doc = JsonDocument.Parse(json);
@@ -344,12 +313,6 @@ public static class MicrosoftAuth
         return (token, uhs);
     }
 
-    /// <summary>
-    /// login_with_xbox 的报错形如 {path, errorType, errorMessage}。
-    /// 其中 InvalidAppRegistrationException 最常见，而且**不是配置问题**：
-    /// Mojang 对第三方启动器的 client ID 有白名单，新注册的 Azure 应用默认不在里面，
-    /// 所以微软授权 / Xbox / XSTS 三步都能过，死在最后一步。这里直接告诉用户原因与申请入口。
-    /// </summary>
     private static string DescribeMinecraftError(string clientId, string json)
     {
         var type = "";
@@ -366,7 +329,7 @@ public static class MicrosoftAuth
         }
         catch
         {
-            // 落到通用描述
+
         }
 
         if (type.Contains("InvalidAppRegistration", StringComparison.OrdinalIgnoreCase) ||
@@ -385,7 +348,6 @@ public static class MicrosoftAuth
         return "换取 Minecraft 令牌失败：" + Describe(json);
     }
 
-    /// <summary>Xbox 两步都可能带 XErr，统一翻译成人话；没有 XErr 就退回通用描述。</summary>
     private static string DescribeXboxError(string json)
     {
         try
@@ -397,13 +359,12 @@ public static class MicrosoftAuth
         }
         catch
         {
-            // 落到通用错误
+
         }
 
         return "Xbox 授权失败：" + Describe(json);
     }
 
-    /// <summary>日志里只放报错正文的前 400 个字符，避免把整包响应刷进日志。</summary>
     private static string Trim(string body)
     {
         var text = body.Replace("\r", " ").Replace("\n", " ").Trim();
@@ -430,7 +391,7 @@ public static class MicrosoftAuth
         }
         catch
         {
-            // 落到通用错误
+
         }
 
         return "Xbox 授权失败：" + Describe(json);
@@ -472,13 +433,12 @@ public static class MicrosoftAuth
         }
         catch
         {
-            // 非 JSON，直接返回原文
+
         }
 
         return body.Length > 300 ? body[..300] : body;
     }
 
-    /// <summary>把 32 位无连字符 UUID 转成标准 8-4-4-4-12 形式。</summary>
     private static string FormatUuid(string raw)
     {
         var hex = raw.Replace("-", "").ToLowerInvariant();

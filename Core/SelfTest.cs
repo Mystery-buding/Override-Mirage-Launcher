@@ -4,11 +4,6 @@ using System.Text.Json;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 无界面自检：验证网络、版本解析、依赖筛选、Java 探测是否正常。
-/// 运行方式：OverrideMirageLauncher.exe --selftest
-/// 结果写入 exe 同目录的 selftest.log。
-/// </summary>
 public static class SelfTest
 {
     public static async Task<int> RunAsync()
@@ -74,16 +69,12 @@ public static class SelfTest
         }
         catch
         {
-            // 忽略
+
         }
 
         return code;
     }
 
-    /// <summary>
-    /// 模组 / 资源包 / 光影三个来源的链路自检：搜索 → 取版本 → 真下一个文件到临时目录。
-    /// 临时目录用完即删，不会往整合包里塞东西。
-    /// </summary>
     private static async Task TestContentSourcesAsync(StringBuilder sb)
     {
         sb.AppendLine("[8] Modrinth 内容源：");
@@ -128,7 +119,6 @@ public static class SelfTest
             }
         }
 
-        // CurseForge 需要 API Key，没填就只提示而不算失败
         var cfg = AppConfig.Load();
         if (cfg.CfApiKey.Length == 0)
         {
@@ -154,14 +144,10 @@ public static class SelfTest
         }
         catch
         {
-            // 临时目录删不掉也不影响
+
         }
     }
 
-    /// <summary>
-    /// [9] 正版登录通道：用内置（或用户配置的）Azure 应用 ID 申请一次设备码。
-    /// 只验证「这个应用能发起授权」，不会也不需要真的登录，不碰任何账号信息。
-    /// </summary>
     private static async Task CheckMicrosoftChannelAsync(StringBuilder sb)
     {
         var cfg = AppConfig.Load();

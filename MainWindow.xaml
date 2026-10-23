@@ -10,7 +10,6 @@
 
     <Window.Resources>
 
-        <!-- 行内标签 -->
         <Style x:Key="RowLabel" TargetType="TextBlock">
             <Setter Property="Width" Value="80" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -26,7 +25,6 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
 
-        <!-- 主按钮 -->
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="#2F6F4F" />
             <Setter Property="Foreground" Value="White" />
@@ -36,7 +34,6 @@
             <Setter Property="Padding" Value="18,9" />
         </Style>
 
-        <!-- 侧栏底部：启动游戏（通栏主按钮） -->
         <Style x:Key="LaunchButton" TargetType="Button">
             <Setter Property="Height" Value="46" />
             <Setter Property="Foreground" Value="White" />
@@ -67,7 +64,6 @@
             </Setter>
         </Style>
 
-        <!-- 侧栏小按钮（圆角、浅底） -->
         <Style x:Key="PillButton" TargetType="Button">
             <Setter Property="Height" Value="34" />
             <Setter Property="Padding" Value="10,0" />
@@ -101,7 +97,6 @@
             </Setter>
         </Style>
 
-        <!-- 列表行里的普通按钮（打开文件夹） -->
         <Style x:Key="RowButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Height" Value="30" />
@@ -135,7 +130,6 @@
             </Setter>
         </Style>
 
-        <!-- 列表行里的危险操作按钮（删除整合包） -->
         <Style x:Key="DangerButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Height" Value="30" />
@@ -180,7 +174,6 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
-        <!-- 侧栏整合包选择按钮 -->
         <Style x:Key="PickerButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Background" Value="#F7F9FB" />
@@ -204,7 +197,6 @@
             </Setter>
         </Style>
 
-        <!-- 下载页：版本分类卡片 -->
         <Style x:Key="CategoryButton" TargetType="Button">
             <Setter Property="Height" Value="76" />
             <Setter Property="Margin" Value="0,0,12,12" />
@@ -233,7 +225,6 @@
             </Setter>
         </Style>
 
-        <!-- 登录方式分段切换 -->
         <Style x:Key="SegmentItem" TargetType="RadioButton">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Foreground" Value="#6B7280" />
@@ -266,7 +257,6 @@
             </Setter>
         </Style>
 
-        <!-- 卡片 -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="#FFFFFF" />
             <Setter Property="BorderBrush" Value="#E4E8EE" />
@@ -275,7 +265,6 @@
             <Setter Property="Padding" Value="20,18" />
         </Style>
 
-        <!-- 侧栏导航项 -->
         <Style x:Key="NavItem" TargetType="RadioButton">
             <Setter Property="Height" Value="44" />
             <Setter Property="Foreground" Value="#4A5160" />
@@ -325,7 +314,6 @@
             </Setter>
         </Style>
 
-        <!-- 页面标题 -->
         <Style x:Key="PageTitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="20" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -343,7 +331,6 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- ================= 侧栏 ================= -->
         <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E4E8EE" BorderThickness="0,0,1,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -367,7 +354,6 @@
                                      Style="{StaticResource NavItem}" Tag="2" Checked="Nav_Checked" />
                     </StackPanel>
 
-                    <!-- 选中指示条：放在导航项之后，保证绘制在选中底色之上 -->
                     <Border x:Name="NavIndicator" Width="3" Height="22"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Margin="4,11,0,0" CornerRadius="2" Background="#2F6F4F"
@@ -378,7 +364,6 @@
                     </Border>
                 </Grid>
 
-                <!-- 底部操作区：启动游戏 → 整合包选择 / 整合包设置 → 版本号 -->
                 <StackPanel Grid.Row="2" Margin="16,0,16,18">
                     <Border Height="1" Background="#EDF1F6" Margin="0,0,0,16" />
 
@@ -436,17 +421,14 @@
             </Grid>
         </Border>
 
-        <!-- ================= 内容区 ================= -->
         <Grid Grid.Column="1" Margin="26,22,26,20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- 页面宿主 -->
             <Grid x:Name="PageHost" Grid.Row="0" ClipToBounds="True">
 
-                <!-- 页面：主页（登录方式 + 用户名） -->
                 <StackPanel x:Name="PageLaunch" VerticalAlignment="Top">
                     <StackPanel.RenderTransform>
                         <TranslateTransform X="0" />
@@ -454,7 +436,7 @@
 
                     <Border Style="{StaticResource Card}" Width="520" HorizontalAlignment="Left">
                         <StackPanel>
-                            <!-- 登录方式切换：正版在左，离线在右 -->
+
                             <Border Background="#E9EEF3" CornerRadius="9" Padding="3" HorizontalAlignment="Left">
                                 <StackPanel Orientation="Horizontal">
                                     <RadioButton x:Name="SegMicrosoft" GroupName="Auth" Content="正版登录"
@@ -466,10 +448,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- 正版（Microsoft） -->
                             <StackPanel x:Name="PaneMicrosoft" Margin="0,20,0,0" Visibility="Collapsed">
 
-                                <!-- 未登录 -->
                                 <StackPanel x:Name="MsSignedOut">
                                     <TextBlock Text="未登录" FontWeight="SemiBold" Foreground="#1B1D21" />
                                     <TextBlock Text="登录后启动时会带上正版凭证，可进入正版服务器。"
@@ -481,7 +461,6 @@
                                                Margin="0,10,0,0" TextWrapping="Wrap" />
                                 </StackPanel>
 
-                                <!-- 等待授权 -->
                                 <StackPanel x:Name="MsSigningIn" Visibility="Collapsed">
                                     <TextBlock Text="在浏览器打开下面的地址，输入代码完成授权："
                                                Foreground="#6B7280" FontSize="12" />
@@ -504,7 +483,6 @@
                                                FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap" />
                                 </StackPanel>
 
-                                <!-- 已登录 -->
                                 <StackPanel x:Name="MsSignedIn" Visibility="Collapsed">
                                     <TextBlock x:Name="TxtMsName" Text="—" FontSize="18" FontWeight="SemiBold"
                                                Foreground="#1B1D21" />
@@ -520,7 +498,6 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <!-- 离线（盗版） -->
                             <StackPanel x:Name="PaneOffline" Margin="0,20,0,0">
                                 <TextBlock Text="用户名" FontWeight="SemiBold" Foreground="#1B1D21" />
                                 <TextBox x:Name="TxtName" Height="38" Margin="0,10,0,0" MaxLength="16"
@@ -532,12 +509,6 @@
                     </Border>
                 </StackPanel>
 
-                <!-- 页面：版本与模组 -->
-
-                <!-- 页面：设置（内容比可视区高，外面包一层滚动条） -->
-                <!-- 设置页内容比可视区高，外面包一层滚动条。
-                     这层 ScrollViewer 就是「页面宿主」：不显示时必须 Collapsed，
-                     否则它会铺满 PageHost 把主页的控件全部挡住（看得见但点不到）。 -->
                 <ScrollViewer x:Name="PageSettingsScroll" Visibility="Collapsed"
                               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               PanningMode="VerticalOnly" Focusable="False" Padding="0,0,10,0">
@@ -634,7 +605,6 @@
                 </ScrollViewer>
             </Grid>
 
-            <!-- 状态条：仅在操作过程中出现，闲置后自动收起 -->
             <StackPanel x:Name="StatusStrip" Grid.Row="1" Margin="0,14,0,0" Visibility="Collapsed">
                 <ProgressBar x:Name="Prg" Height="4" Minimum="0" Maximum="100" Value="0"
                              Foreground="#2F6F4F" Background="#E6EBF0" BorderThickness="0" />
@@ -642,7 +612,6 @@
                            Margin="0,8,0,0" TextWrapping="Wrap" />
             </StackPanel>
 
-            <!-- 整合包选择界面：盖住内容区，点卡片切换，返回则关闭 -->
             <Grid x:Name="PickerOverlay" Grid.RowSpan="2" Background="#F4F6F9" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -670,8 +639,7 @@
                 </StackPanel>
             </Grid>
         </Grid>
-        <!-- ===== 下载界面：覆盖整个窗口 ===== -->
-                <!-- 页面：下载（左侧来源 + 右侧分类 / 安装器） -->
+
                 <Grid x:Name="DownloadOverlay" Grid.ColumnSpan="2" Background="#F4F6F9" Visibility="Collapsed">
                     <Grid.RenderTransform>
                         <TranslateTransform X="0" />
@@ -681,7 +649,6 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左侧：下载来源 -->
                     <StackPanel Grid.Column="0" Margin="26,24,18,20">
                         <Button Content="返回" Style="{StaticResource PillButton}" Height="40"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
@@ -701,7 +668,6 @@
                                      Checked="DownloadSource_Checked" />
                     </StackPanel>
 
-                    <!-- 右侧视图 1：版本分类 -->
                     <StackPanel x:Name="DownloadCategories" Grid.Column="1" Margin="0,24,26,20">
                         <StackPanel.RenderTransform>
                             <TranslateTransform X="0" />
@@ -712,7 +678,6 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <!-- 右侧视图 0：模组 / 资源包 / 光影（Modrinth 搜索） -->
                     <Grid x:Name="DownloadContent" Grid.Column="1" Margin="0,24,26,20"
                           Visibility="Collapsed">
                         <Grid.RenderTransform>
@@ -786,7 +751,6 @@
                         </Grid>
                     </Grid>
 
-                    <!-- 右侧视图 2：加载器安装 -->
                     <Grid x:Name="DownloadInstaller" Grid.Column="1" Margin="0,24,26,20" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />

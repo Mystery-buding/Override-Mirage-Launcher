@@ -6,17 +6,11 @@ using System.Text.Json;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// CurseForge 接口封装（api.curseforge.com/v1）。
-/// 与 Modrinth 不同，CurseForge 的第三方接口必须带 API Key，
-/// Key 在 https://console.curseforge.com 免费申请，填在设置页里。
-/// </summary>
 public static class CurseForgeService
 {
     private const string Api = "https://api.curseforge.com/v1";
     private const int MinecraftGameId = 432;
 
-    // CurseForge 的 classId：6 = 模组，12 = 资源包，6552 = 光影
     private static int ClassId(ContentKind kind) => kind switch
     {
         ContentKind.ResourcePack => 12,
@@ -24,7 +18,6 @@ public static class CurseForgeService
         _ => 6
     };
 
-    // CurseForge 的 modLoaderType：1 = Forge，4 = Fabric，5 = Quilt，6 = NeoForge
     private static int LoaderTypeId(string? loader) => loader switch
     {
         "forge" => 1,
@@ -34,7 +27,6 @@ public static class CurseForgeService
         _ => 0
     };
 
-    /// <summary>搜索项目。apiKey 为空会在调用方被拦掉，这里只负责发请求。</summary>
     public static async Task<List<ContentProject>> SearchAsync(string query, ContentKind kind,
         string? mcVersion, string? loader, string apiKey, int limit = 20, CancellationToken ct = default)
     {
@@ -82,7 +74,6 @@ public static class CurseForgeService
                 }
             }
 
-            // 搜索接口不给游戏版本列表，用 latestFilesIndexes 里的去个重
             var versions = new List<string>();
             if (item.TryGetProperty("latestFilesIndexes", out var indexes))
             {
@@ -112,7 +103,6 @@ public static class CurseForgeService
         return result;
     }
 
-    /// <summary>取项目的文件列表（按时间倒序），可带游戏版本与加载器过滤。</summary>
     public static async Task<List<ContentVersion>> GetVersionsAsync(string projectId,
         string? mcVersion, string? loader, string apiKey, CancellationToken ct = default)
     {
@@ -138,7 +128,6 @@ public static class CurseForgeService
             var fileName = GetString(item, "fileName");
             var url = GetString(item, "downloadUrl");
 
-            // 有些老文件没有 downloadUrl，按 CurseForge 的规则用 id 拼 CDN 地址
             if (url.Length == 0 && id > 0 && fileName.Length > 0)
                 url = $"https://media.forgecdn.net/files/{id / 1000}/{id % 1000}/{fileName}";
 
@@ -198,7 +187,6 @@ public static class CurseForgeService
         return result;
     }
 
-    /// <summary>下载某个版本的主文件到目标目录。</summary>
     public static async Task<string> DownloadAsync(ContentVersion version, string dir,
         CancellationToken ct = default)
     {
@@ -214,7 +202,6 @@ public static class CurseForgeService
         return dest;
     }
 
-    /// <summary>CurseForge 的 gameVersions 里会混着加载器名，映射成和 Modrinth 一致的写法。</summary>
     private static string? LoaderName(string text) => text.ToLowerInvariant() switch
     {
         "forge" => "forge",

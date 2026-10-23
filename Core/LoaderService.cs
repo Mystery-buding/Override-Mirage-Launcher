@@ -14,11 +14,6 @@ public enum LoaderKind
     NeoForge
 }
 
-/// <summary>
-/// 模组加载器的版本查询与安装。
-/// Fabric / Quilt 走官方 meta 接口直接生成版本 JSON；
-/// Forge / NeoForge 调用官方安装器（需要 Java）。
-/// </summary>
 public static class LoaderService
 {
     public static string DisplayName(LoaderKind kind) => kind switch
@@ -30,8 +25,6 @@ public static class LoaderService
         _ => kind.ToString()
     };
 
-    // ---------------- 版本查询 ----------------
-
     private const string FabricOfficialMeta = "https://meta.fabricmc.net/v2/versions/loader";
     private const string FabricMirrorMeta = "https://bmclapi2.bangbang93.com/fabric-meta/v2/versions/loader";
     private const string QuiltMeta = "https://meta.quiltmc.org/v3/versions/loader";
@@ -40,11 +33,6 @@ public static class LoaderService
     private const string NeoForgeOfficialMaven = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
     private const string NeoForgeMirrorMaven = "https://bmclapi2.bangbang93.com/maven/net/neoforged/neoforge/maven-metadata.xml";
 
-    /// <summary>
-    /// 查询某个原版版本可用的加载器版本。官方源与镜像会自动依次尝试：
-    /// 按「设置里的下载源」决定谁先，先成功的一方结果直接返回，
-    /// 每个源单独 18 秒超时，整体 45 秒兜底。
-    /// </summary>
     public static async Task<IReadOnlyList<string>> GetLoaderVersionsAsync(
         LoaderKind kind, string mcVersion, CancellationToken ct = default, bool preferMirror = false)
     {
@@ -80,13 +68,11 @@ public static class LoaderService
         }
     }
 
-    /// <summary>按当前下载源决定先试官方还是先试镜像。</summary>
     private static IEnumerable<string> SourceOrder(string official, string mirror, bool preferMirror = false) =>
         preferMirror || DownloadSource.UseMirror
             ? new[] { mirror, official }
             : new[] { official, mirror };
 
-    /// <summary>抓取文本，单次请求 18 秒超时；URL 由调用方显式给出，不再走下载源改写。</summary>
     private static async Task<string> FetchAsync(string url, CancellationToken ct)
     {
         using var attempt = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -152,7 +138,6 @@ public static class LoaderService
     {
         Exception? last = null;
 
-        // maven 元数据最全（promotions 只登记 recommended / latest，新版本常常没有）
         foreach (var url in SourceOrder(ForgeOfficialMaven, ForgeMirrorMaven, preferMirror))
         {
             try
@@ -174,7 +159,6 @@ public static class LoaderService
             }
         }
 
-        // 最后的兜底：promotions
         try
         {
             var json = await FetchAsync(
@@ -262,7 +246,6 @@ public static class LoaderService
             .Take(25)
             .ToList();
 
-    /// <summary>maven 资源（安装器等）的候选地址：官方与 BMCLAPI 镜像二选一先试，失败换另一个。</summary>
     private static IEnumerable<string> MavenCandidates(string url, bool preferMirror = false)
     {
         const string forgeHost = "https://maven.minecraftforge.net";
@@ -293,18 +276,12 @@ public static class LoaderService
         }
     }
 
-    /// <summary>
-    /// NeoForge 版本号与原版的对应关系：1.21.1 → 21.1.，1.20.4 → 20.4.，1.21 → 21.0.；
-    /// 26.x 之后 Mojang 去掉了「1.」前缀，26.3 → 26.3.
-    /// </summary>
     private static string NeoForgePrefix(string mcVersion)
     {
         var rest = mcVersion.StartsWith("1.", StringComparison.Ordinal) ? mcVersion[2..] : mcVersion;
         if (rest.Length == 0) return "";
         return rest.Contains('.') ? rest + "." : rest + ".0.";
     }
-
-    // ---------------- 安装 ----------------
 
     public static async Task<string> InstallAsync(AppConfig cfg, LoaderKind kind, string mcVersion,
         string loaderVersion, IProgress<InstallProgress>? progress, Action<string> log,
@@ -315,7 +292,6 @@ public static class LoaderService
 
         log($"准备为 {mcVersion} 安装 {DisplayName(kind)} {loaderVersion}");
 
-        // 加载器版本都要基于原版，先保证原版完整
         progress?.Report(new InstallProgress($"检查原版 {mcVersion}…", 1));
         await MinecraftInstaller.InstallAsync(cfg, mcVersion, progress, ct).ConfigureAwait(false);
 
@@ -339,9 +315,6 @@ public static class LoaderService
         };
     }
 
-    /// <summary>
-    /// Fabric / Quilt：meta 直接返回完整版本 JSON，写入后按普通版本安装依赖。
-    /// </summary>
     private static async Task<string> InstallMetaProfileAsync(AppConfig cfg, string profileUrl,
         IProgress<InstallProgress>? progress, Action<string> log, CancellationToken ct)
     {
@@ -365,14 +338,10 @@ public static class LoaderService
         return id;
     }
 
-    /// <summary>
-    /// Forge / NeoForge：下载官方安装器并执行 --installClient，再补全依赖与 natives。
-    /// </summary>
     private static async Task<string> InstallWithInstallerAsync(AppConfig cfg, LoaderKind kind, string mcVersion,
         string loaderVersion, IProgress<InstallProgress>? progress, Action<string> log, CancellationToken ct)
     {
-        // 安装过程（安装器下载、依赖预置、后续补全）都强制走镜像：
-        // neoforged 的 maven 在部分网络下不可达，官方安装器又不支持指定仓库。
+
         using var mirrorScope = DownloadSource.PreferMirror();
 
         string installerUrl;
@@ -418,12 +387,8 @@ public static class LoaderService
         if (lastError is not null)
             throw new InvalidOperationException("安装器下载失败：" + lastError.Message, lastError);
 
-        // Forge / NeoForge 安装器会检查官方向导配置，缺失时直接报
-        // "There is no Minecraft launcher profile" 并退出。
         EnsureLauncherProfiles(cfg.GameDir, log);
 
-        // 官方安装器内部自己从 maven 拉依赖；neoforged 的 maven 在国内常常连不上，
-        // 这里先按镜像把依赖放进 libraries，安装器校验通过后会直接跳过下载。
         progress?.Report(new InstallProgress("预置安装器依赖…", 42));
         await PrefetchInstallerLibrariesAsync(installerPath, cfg.GameDir, log, ct).ConfigureAwait(false);
 
@@ -437,8 +402,6 @@ public static class LoaderService
 
         log($"安装器完成，生成版本 {versionId}");
 
-        // NeoForge 26.x 的安装器只写了半份版本 JSON，缺 universal / srg 两个本地构件，
-        // FML 启动时会判定安装损坏。这里在补全依赖之前先把它补齐。
         if (kind == LoaderKind.NeoForge)
         {
             var text = await File.ReadAllTextAsync(jsonPath, ct).ConfigureAwait(false);
@@ -451,10 +414,6 @@ public static class LoaderService
         return versionId;
     }
 
-    /// <summary>
-    /// Forge / NeoForge 安装器要求游戏目录中存在官方启动器的向导文件，不存在就直接终止。
-    /// 已经有的话不要覆盖，避免破坏用户原有的配置。
-    /// </summary>
     private static void EnsureLauncherProfiles(string gameDir, Action<string> log)
     {
         try
@@ -479,10 +438,6 @@ public static class LoaderService
         }
     }
 
-    /// <summary>
-    /// 读取安装器 jar 里的 version.json / install_profile.json，按镜像预下载依赖到 libraries。
-    /// 安装器发现文件已存在且校验通过时会跳过下载，从而绕开不可达的 neoforged maven。
-    /// </summary>
     private static async Task PrefetchInstallerLibrariesAsync(string installerJar, string gameDir,
         Action<string> log, CancellationToken ct)
     {
@@ -612,11 +567,11 @@ public static class LoaderService
         var finished = await Task.Run(() => process.WaitForExit(900_000), ct).ConfigureAwait(false);
         if (!finished)
         {
-            try { process.Kill(true); } catch { /* 忽略 */ }
+            try { process.Kill(true); } catch {  }
             throw new TimeoutException("加载器安装器运行超时（15 分钟）。");
         }
 
-        process.WaitForExit(); // 等待输出流读完
+        process.WaitForExit();
 
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"加载器安装器退出码 {process.ExitCode}，请查看日志。");

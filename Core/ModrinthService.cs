@@ -6,15 +6,10 @@ using System.Text.Json;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// Modrinth 接口封装：搜索 → 取版本 → 下载文件。
-/// Modrinth 的开放接口不需要 API Key，只要带上 User-Agent 即可。
-/// </summary>
 public static class ModrinthService
 {
     private const string Api = "https://api.modrinth.com/v2";
 
-    /// <summary>内容类型 → Modrinth 的 project_type。</summary>
     private static string ProjectType(ContentKind kind) => kind switch
     {
         ContentKind.ResourcePack => "resourcepack",
@@ -22,10 +17,6 @@ public static class ModrinthService
         _ => "mod"
     };
 
-    /// <summary>
-    /// 搜索项目。`mcVersion` / `loader` 为空时不过滤；加载器只对模组有意义
-    /// （资源包与光影没有加载器概念）。
-    /// </summary>
     public static async Task<List<ContentProject>> SearchAsync(string query, ContentKind kind,
         string? mcVersion, string? loader, int limit = 20, CancellationToken ct = default)
     {
@@ -37,7 +28,6 @@ public static class ModrinthService
         if (!string.IsNullOrWhiteSpace(mcVersion))
             facets.Add(new List<string> { "versions:" + mcVersion });
 
-        // 模组按加载器过滤；光影按 Iris / OptiFine 之类的分类过滤没有统一写法，跳过
         if (kind == ContentKind.Mod && !string.IsNullOrWhiteSpace(loader))
             facets.Add(new List<string> { "categories:" + loader });
 
@@ -70,7 +60,6 @@ public static class ModrinthService
         return result;
     }
 
-    /// <summary>取一个项目可下载的版本列表，按发布时间倒序。</summary>
     public static async Task<List<ContentVersion>> GetVersionsAsync(string projectId,
         string? mcVersion, string? loader, CancellationToken ct = default)
     {
@@ -131,7 +120,6 @@ public static class ModrinthService
         return result;
     }
 
-    /// <summary>挑主文件（或唯一文件），下载到目标目录，返回落盘路径。</summary>
     public static async Task<string> DownloadAsync(ContentVersion version, string dir,
         CancellationToken ct = default)
     {
@@ -141,17 +129,12 @@ public static class ModrinthService
         Directory.CreateDirectory(dir);
         var dest = Path.Combine(dir, file.FileName);
 
-        // Modrinth 的 CDN 不走镜像，rewrite 关掉
         await Downloader.DownloadAsync(file.Url, dest, file.Sha1,
             file.Size > 0 ? file.Size : null, ct, rewrite: false).ConfigureAwait(false);
 
         return dest;
     }
 
-    /// <summary>
-    /// 取项目图标（原始字节），带本地磁盘缓存。
-    /// Modrinth 的图标有相当一部分是 webp，WPF 解不了，交给调用方兜底。
-    /// </summary>
     public static async Task<byte[]?> GetIconBytesAsync(string? url, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(url)) return null;
@@ -164,7 +147,7 @@ public static class ModrinthService
         if (File.Exists(cachePath))
         {
             try { return await File.ReadAllBytesAsync(cachePath, ct).ConfigureAwait(false); }
-            catch { /* 缓存坏了就重新下 */ }
+            catch {  }
         }
 
         try

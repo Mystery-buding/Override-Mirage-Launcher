@@ -4,9 +4,6 @@ using System.Security.Cryptography;
 
 namespace OverrideMirageLauncher.Core;
 
-/// <summary>
-/// 带校验的下载器。所有网络请求经由同一个 HttpClient，避免连接池耗尽。
-/// </summary>
 public static class Downloader
 {
     public static readonly HttpClient Client = CreateClient();
@@ -25,7 +22,6 @@ public static class Downloader
         return client;
     }
 
-    /// <param name="rewrite">是否按当前下载源改写 URL；显式指定源的调用方传 false。</param>
     public static async Task<string> GetStringAsync(string url, CancellationToken ct = default, bool rewrite = true)
     {
         var target = rewrite ? DownloadSource.Rewrite(url) : url;
@@ -34,11 +30,6 @@ public static class Downloader
         return await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 下载单个文件。目标文件已存在且符合校验时直接跳过。
-    /// </summary>
-    /// <param name="sha1">期望的 SHA1（小写十六进制）。为 null 时只检查存在性。</param>
-    /// <param name="size">期望大小。为 null 时不检查。</param>
     public static async Task DownloadAsync(string url, string destPath, string? sha1, long? size,
         CancellationToken ct = default, bool rewrite = true)
     {
@@ -86,9 +77,6 @@ public static class Downloader
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
-    /// <summary>
-    /// 并发执行一批任务，每完成一个回调一次。
-    /// </summary>
     public static async Task RunAllAsync(IReadOnlyList<Func<Task>> jobs, int maxDegree,
         Action? onOneDone = null, CancellationToken ct = default)
     {
@@ -120,6 +108,6 @@ public static class Downloader
 
     private static void TryDelete(string path)
     {
-        try { File.Delete(path); } catch { /* 忽略 */ }
+        try { File.Delete(path); } catch {  }
     }
 }
